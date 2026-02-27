@@ -11,6 +11,39 @@ All commands are **read-only** — nbpull never writes data to NetBox.
 
 ---
 
+## `nbpull setup`
+
+Interactive setup wizard that configures your NetBox connection.
+
+```bash
+nbpull setup
+nbpull setup --verbose
+```
+
+### What It Does
+
+1. **Creates a `.env` file** — prompts for your NetBox URL and API
+   token, writes them to `.env` in the current directory
+2. **Tests the connection** — probes `/api/status/` and all four IPAM
+   endpoints (`prefixes`, `ip-addresses`, `vlans`, `vrfs`) to verify
+   connectivity and permissions
+3. **Optionally creates `batch_prefixes.toml`** — walks you through
+   entering CIDR prefixes and optional global filters
+
+### Existing Configuration
+
+If a `.env` file already exists, the wizard shows the current URL and
+a masked token (last 4 characters visible), then asks whether to
+overwrite.
+
+### Options
+
+| Flag | Type | Description |
+|---|---|---|
+| `--verbose` / `-v` | flag | Debug logging |
+
+---
+
 ## `nbpull prefixes`
 
 List IPAM prefixes.

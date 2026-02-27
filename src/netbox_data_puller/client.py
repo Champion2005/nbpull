@@ -118,6 +118,58 @@ class NetBoxClient:
         return result
 
     # ------------------------------------------------------------------
+    # Connection probing (read-only)
+    # ------------------------------------------------------------------
+
+    async def probe(
+        self,
+        endpoints: list[str] | None = None,
+    ) -> list[tuple[str, bool, str]]:
+        """Probe NetBox API endpoints to verify connectivity and auth.
+
+        Uses HTTP GET exclusively. Returns a list of
+        ``(endpoint, success, detail)`` tuples.
+
+        Args:
+            endpoints: API paths to probe.  Defaults to
+                ``["status/", "ipam/prefixes/", "ipam/ip-addresses/",
+                "ipam/vlans/", "ipam/vrfs/"]``.
+
+        Returns:
+            List of ``(endpoint, ok, detail)`` for each probed path.
+        """
+        if endpoints is None:
+            endpoints = [
+                "status/",
+                "ipam/prefixes/",
+                "ipam/ip-addresses/",
+                "ipam/vlans/",
+                "ipam/vrfs/",
+            ]
+
+        results: list[tuple[str, bool, str]] = []
+        for ep in endpoints:
+            try:
+                logger.debug("PROBE GET %s", ep)
+                params: dict[str, int] = {}
+                if ep != "status/":
+                    params["limit"] = 1
+                response = await self._client.get(ep, params=params)
+                response.raise_for_status()
+                results.append((ep, True, f"{response.status_code} OK"))
+            except httpx.HTTPStatusError as exc:
+                code = exc.response.status_code
+                reason = exc.response.reason_phrase
+                results.append((ep, False, f"{code} {reason}"))
+            except httpx.ConnectError:
+                results.append((ep, False, "Connection refused"))
+            except httpx.TimeoutException:
+                results.append((ep, False, "Timeout"))
+            except Exception as exc:
+                results.append((ep, False, str(exc)))
+        return results
+
+    # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
 

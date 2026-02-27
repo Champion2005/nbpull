@@ -58,13 +58,13 @@ make install   # uses uv sync
 ## 🚀 Quick Start
 
 ```bash
-# 1. Configure your NetBox connection
+# 1. Run the interactive setup wizard
+nbpull setup
+
+# Or configure manually:
 export NETBOX_URL=https://netbox.example.com
 export NETBOX_TOKEN=your_read_only_token
-
-# Or use a .env file:
-cp .env.example .env
-# Edit .env with your values
+# Or: cp .env.example .env && edit .env
 
 # 2. Pull data
 nbpull prefixes
@@ -79,6 +79,7 @@ nbpull batch-prefixes --file my_prefixes.toml --status-only
 
 | Command | Description |
 |---|---|
+| `nbpull setup` | Interactive setup wizard |
 | `nbpull prefixes` | List IPAM prefixes |
 | `nbpull ip-addresses` | List IP addresses |
 | `nbpull vlans` | List VLANs |

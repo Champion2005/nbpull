@@ -9,6 +9,15 @@ project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- 🛠️ `setup` command — interactive wizard that creates `.env`, tests
+  the NetBox connection (probes `status/` + all 4 IPAM endpoints),
+  and optionally creates `batch_prefixes.toml` with user-provided
+  prefixes and global filters
+- 🔍 `NetBoxClient.probe()` — read-only endpoint probe method for
+  verifying connectivity and auth against multiple API paths
+
 ## [0.1.2] — 2026-02-27
 
 ### Added

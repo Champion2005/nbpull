@@ -352,3 +352,102 @@ async def test_get_empty_results(settings: NetBoxSettings) -> None:
         results = await client.get("ipam/prefixes/")
 
     assert results == []
+
+
+# ------------------------------------------------------------------
+# Probe tests
+# ------------------------------------------------------------------
+
+
+@respx.mock
+@pytest.mark.asyncio
+async def test_probe_all_endpoints_ok(settings: NetBoxSettings) -> None:
+    """Probe returns success for all default endpoints."""
+    respx.get(
+        "https://netbox.example.com/api/status/",
+    ).mock(
+        return_value=httpx.Response(200, json={"netbox-version": "4.0"}),
+    )
+    for ep in ["ipam/prefixes/", "ipam/ip-addresses/", "ipam/vlans/", "ipam/vrfs/"]:
+        respx.get(
+            f"https://netbox.example.com/api/{ep}",
+        ).mock(
+            return_value=httpx.Response(
+                200,
+                json={"count": 0, "next": None, "results": []},
+            ),
+        )
+
+    async with NetBoxClient(settings) as client:
+        results = await client.probe()
+
+    assert len(results) == 5
+    assert all(ok for _, ok, _ in results)
+
+
+@respx.mock
+@pytest.mark.asyncio
+async def test_probe_partial_failure(settings: NetBoxSettings) -> None:
+    """Probe reports individual failures without aborting."""
+    respx.get(
+        "https://netbox.example.com/api/status/",
+    ).mock(
+        return_value=httpx.Response(200, json={"netbox-version": "4.0"}),
+    )
+    respx.get(
+        "https://netbox.example.com/api/ipam/prefixes/",
+    ).mock(
+        return_value=httpx.Response(403),
+    )
+    for ep in ["ipam/ip-addresses/", "ipam/vlans/", "ipam/vrfs/"]:
+        respx.get(
+            f"https://netbox.example.com/api/{ep}",
+        ).mock(
+            return_value=httpx.Response(
+                200,
+                json={"count": 0, "next": None, "results": []},
+            ),
+        )
+
+    async with NetBoxClient(settings) as client:
+        results = await client.probe()
+
+    assert len(results) == 5
+    status_ok = {ep: ok for ep, ok, _ in results}
+    assert status_ok["status/"] is True
+    assert status_ok["ipam/prefixes/"] is False
+    assert status_ok["ipam/ip-addresses/"] is True
+
+
+@respx.mock
+@pytest.mark.asyncio
+async def test_probe_custom_endpoints(settings: NetBoxSettings) -> None:
+    """Probe accepts custom endpoint list."""
+    respx.get(
+        "https://netbox.example.com/api/status/",
+    ).mock(
+        return_value=httpx.Response(200, json={"netbox-version": "4.0"}),
+    )
+
+    async with NetBoxClient(settings) as client:
+        results = await client.probe(endpoints=["status/"])
+
+    assert len(results) == 1
+    assert results[0][0] == "status/"
+    assert results[0][1] is True
+
+
+@respx.mock
+@pytest.mark.asyncio
+async def test_probe_uses_only_get(settings: NetBoxSettings) -> None:
+    """Probe only uses GET — verifying read-only invariant."""
+    route = respx.get(
+        "https://netbox.example.com/api/status/",
+    ).mock(
+        return_value=httpx.Response(200, json={"netbox-version": "4.0"}),
+    )
+
+    async with NetBoxClient(settings) as client:
+        await client.probe(endpoints=["status/"])
+
+    assert route.calls[0].request.method == "GET"

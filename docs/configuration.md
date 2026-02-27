@@ -21,7 +21,21 @@ file in your working directory.
 4. **Uncheck "Write enabled"** for safety — nbpull only reads data
 5. Copy the token value
 
+## Quick Setup
+
+The easiest way to configure nbpull is with the interactive setup
+wizard:
+
+```bash
+nbpull setup
+```
+
+This walks you through entering your URL and token, tests the
+connection, and writes everything to a `.env` file.
+
 ## Using a `.env` File
+
+Alternatively, create the file manually:
 
 ```bash
 cp .env.example .env
