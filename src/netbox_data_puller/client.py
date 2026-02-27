@@ -44,20 +44,31 @@ class NetBoxClient:
         self,
         endpoint: str,
         params: dict[str, Any] | None = None,
+        *,
+        max_results: int | None = None,
     ) -> list[dict[str, Any]]:
-        """Fetch all pages of results from a NetBox API endpoint.
+        """Fetch results from a NetBox API endpoint.
 
-        Uses HTTP GET exclusively. Automatically follows pagination.
+        Uses HTTP GET exclusively. Automatically follows pagination
+        until *max_results* records have been collected or all pages
+        are exhausted.
 
         Args:
             endpoint: API path relative to /api/ (e.g. "ipam/prefixes/").
             params: Optional query parameters for filtering.
+            max_results: Stop after collecting this many records.
+                When ``None`` (default), fetch **all** pages.
 
         Returns:
-            Flat list of result dicts across all pages.
+            Flat list of result dicts across fetched pages.
         """
         results: list[dict[str, Any]] = []
-        query = {**(params or {}), "limit": self._page_size, "offset": 0}
+        page_size = (
+            min(self._page_size, max_results)
+            if max_results is not None
+            else self._page_size
+        )
+        query = {**(params or {}), "limit": page_size, "offset": 0}
 
         while True:
             logger.debug("GET %s params=%s", endpoint, query)
@@ -67,10 +78,15 @@ class NetBoxClient:
 
             results.extend(data.get("results", []))
 
+            # Stop if we've reached the requested cap
+            if max_results is not None and len(results) >= max_results:
+                results = results[:max_results]
+                break
+
             if data.get("next") is None:
                 break
 
-            query["offset"] = query["offset"] + self._page_size
+            query["offset"] = query["offset"] + page_size
 
         logger.info(
             "Fetched %d records from %s",

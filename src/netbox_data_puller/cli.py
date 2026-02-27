@@ -145,17 +145,21 @@ def _configure_logging(verbose: bool) -> None:
 async def _fetch(
     endpoint: str,
     params: dict[str, Any],
+    *,
+    max_results: int | None = None,
 ) -> list[dict[str, Any]]:
     """Execute a read-only fetch against NetBox."""
     settings = _get_settings()
     async with NetBoxClient(settings) as client:
-        return await client.get(endpoint, params)
+        return await client.get(endpoint, params, max_results=max_results)
 
 
 def _fetch_with_spinner(
     endpoint: str,
     params: dict[str, Any],
     label: str = "Querying NetBox",
+    *,
+    max_results: int | None = None,
 ) -> list[dict[str, Any]]:
     """Fetch with a live spinner shown on stderr."""
     with Progress(
@@ -166,7 +170,7 @@ def _fetch_with_spinner(
         transient=True,
     ) as progress:
         progress.add_task(label, total=None)
-        return asyncio.run(_fetch(endpoint, params))
+        return asyncio.run(_fetch(endpoint, params, max_results=max_results))
 
 
 # ------------------------------------------------------------------
@@ -196,9 +200,13 @@ def prefixes(
         site=site,
         tag=tag,
         q=search,
-        limit=limit,
     )
-    raw = _fetch_with_spinner("ipam/prefixes/", params, "Fetching prefixes")
+    raw = _fetch_with_spinner(
+        "ipam/prefixes/",
+        params,
+        "Fetching prefixes",
+        max_results=limit,
+    )
     records = [Prefix.model_validate(r) for r in raw]
 
     if fmt == OutputFormat.json:
@@ -236,12 +244,12 @@ def ip_addresses(
         tag=tag,
         q=search,
         parent=prefix,
-        limit=limit,
     )
     raw = _fetch_with_spinner(
         "ipam/ip-addresses/",
         params,
         "Fetching IP addresses",
+        max_results=limit,
     )
     records = [IPAddress.model_validate(r) for r in raw]
 
@@ -270,9 +278,13 @@ def vlans(
         site=site,
         tag=tag,
         q=search,
-        limit=limit,
     )
-    raw = _fetch_with_spinner("ipam/vlans/", params, "Fetching VLANs")
+    raw = _fetch_with_spinner(
+        "ipam/vlans/",
+        params,
+        "Fetching VLANs",
+        max_results=limit,
+    )
     records = [VLAN.model_validate(r) for r in raw]
 
     if fmt == OutputFormat.json:
@@ -296,9 +308,13 @@ def vrfs(
         tenant=tenant,
         tag=tag,
         q=search,
-        limit=limit,
     )
-    raw = _fetch_with_spinner("ipam/vrfs/", params, "Fetching VRFs")
+    raw = _fetch_with_spinner(
+        "ipam/vrfs/",
+        params,
+        "Fetching VRFs",
+        max_results=limit,
+    )
     records = [VRF.model_validate(r) for r in raw]
 
     if fmt == OutputFormat.json:
