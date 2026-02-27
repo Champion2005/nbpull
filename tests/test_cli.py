@@ -565,8 +565,7 @@ class TestSetupCommand:
         monkeypatch.chdir(tmp_path)
         env_file = tmp_path / ".env"
         env_file.write_text(
-            "NETBOX_URL=https://old.example.com\n"
-            "NETBOX_TOKEN=old-token-1234\n",
+            "NETBOX_URL=https://old.example.com\nNETBOX_TOKEN=old-token-1234\n",
         )
         mock_probe.return_value = MOCK_PROBE_ALL_OK
         # Answer 'n' to overwrite, 'n' to batch
@@ -591,8 +590,7 @@ class TestSetupCommand:
         monkeypatch.chdir(tmp_path)
         env_file = tmp_path / ".env"
         env_file.write_text(
-            "NETBOX_URL=https://old.example.com\n"
-            "NETBOX_TOKEN=old-token-1234\n",
+            "NETBOX_URL=https://old.example.com\nNETBOX_TOKEN=old-token-1234\n",
         )
         mock_probe.return_value = MOCK_PROBE_ALL_OK
         # Answer 'y' to overwrite, provide new URL + token, decline batch
@@ -617,8 +615,7 @@ class TestSetupCommand:
         monkeypatch.chdir(tmp_path)
         env_file = tmp_path / ".env"
         env_file.write_text(
-            "NETBOX_URL=https://netbox.example.com\n"
-            "NETBOX_TOKEN=abcdefgh1234\n",
+            "NETBOX_URL=https://netbox.example.com\nNETBOX_TOKEN=abcdefgh1234\n",
         )
         mock_probe.return_value = MOCK_PROBE_ALL_OK
         result = runner.invoke(

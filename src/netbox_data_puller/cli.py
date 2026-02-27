@@ -247,9 +247,9 @@ def _write_batch_toml(
         for key, val in filters.items():
             lines.append(f'{key} = "{val}"')
     else:
-        lines.append("# status = \"active\"")
-        lines.append("# vrf = \"Production\"")
-        lines.append("# tenant = \"Ops\"")
+        lines.append('# status = "active"')
+        lines.append('# vrf = "Production"')
+        lines.append('# tenant = "Ops"')
     lines.append("")
     path.write_text("\n".join(lines))
 
@@ -400,8 +400,7 @@ def setup(
                 f"[bold red]❌ Connection failed:[/bold red] {exc}",
             )
             console.print(
-                "\n[dim]Check your URL and token, then run "
-                "'nbpull setup' again.[/dim]",
+                "\n[dim]Check your URL and token, then run 'nbpull setup' again.[/dim]",
             )
             raise typer.Exit(code=2) from exc
 
@@ -419,9 +418,7 @@ def setup(
     all_ok = True
     for endpoint, ok, detail in probe_results:
         status_text = (
-            "[bold green]✅ Pass[/bold green]"
-            if ok
-            else "[bold red]❌ Fail[/bold red]"
+            "[bold green]✅ Pass[/bold green]" if ok else "[bold red]❌ Fail[/bold red]"
         )
         if not ok:
             all_ok = False
