@@ -1,0 +1,77 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug!
+        Please fill out the sections below so we can reproduce and fix it.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 🐛 Bug Description
+      description: A clear description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 🔄 Steps to Reproduce
+      description: |
+        Steps to reproduce the behavior:
+      placeholder: |
+        1. Run `nbpull prefixes --status active`
+        2. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ Expected Behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: ❌ Actual Behavior
+      description: What actually happened. Include full error output if applicable.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 📦 nbpull Version
+      description: Output of `nbpull --version` or `uv pip show netbox-data-puller`
+      placeholder: "0.1.0"
+
+  - type: input
+    id: netbox-version
+    attributes:
+      label: 🌐 NetBox Version
+      description: Your NetBox instance version (if relevant)
+      placeholder: "4.x"
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 💻 Operating System
+      options:
+        - Linux
+        - macOS
+        - Windows (WSL)
+        - Windows
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 📎 Additional Context
+      description: Any other context, logs, or screenshots.

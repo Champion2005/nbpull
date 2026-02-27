@@ -1,0 +1,79 @@
+[project]
+name = "nbpull"
+version = "0.1.0"
+description = "🔍 Read-only CLI tool to pull IPAM data from NetBox"
+readme = "README.md"
+license = "GPL-3.0-only"
+authors = [
+    { name = "Aditya Patel", email = "adityapatel0905@gmail.com" }
+]
+requires-python = ">=3.13"
+keywords = ["netbox", "ipam", "network", "cli", "read-only"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Networking",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = [
+    "httpx>=0.28",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "typer>=0.15",
+    "rich>=13.9",
+]
+
+[project.scripts]
+nbpull = "netbox_data_puller.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/Champion2005/nbpull"
+Documentation = "https://github.com/Champion2005/nbpull/tree/main/docs"
+Repository = "https://github.com/Champion2005/nbpull"
+Issues = "https://github.com/Champion2005/nbpull/issues"
+Changelog = "https://github.com/Champion2005/nbpull/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["uv_build>=0.9.27,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "netbox_data_puller"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "respx>=0.22",
+    "ruff>=0.9",
+    "mypy>=1.14",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["netbox_data_puller"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: hits the live NetBox API (requires NETBOX_URL + NETBOX_TOKEN)",
+]

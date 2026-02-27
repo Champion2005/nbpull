@@ -1,0 +1,25 @@
+# 📡 Batch prefix query configuration
+#
+# Copy this file and customize it for your environment.
+# Run with: nbpull batch-prefixes --file <your_file>.toml
+# Or rename to batch_prefixes.toml and run: nbpull batch-prefixes
+
+# ------------------------------------------------------------------
+# Prefixes to query (plain CIDR list)
+# ------------------------------------------------------------------
+prefixes = [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+]
+
+# ------------------------------------------------------------------
+# Global filters applied to every prefix query (all optional)
+# Uncomment or add values as needed.
+# ------------------------------------------------------------------
+[filters]
+# status = "active"
+# vrf = "Production"
+# tenant = "MyOrg"
+# site = "DC1"
+# tag = "critical"

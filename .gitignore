@@ -1,0 +1,44 @@
+# 🐍 Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+wheels/
+*.whl
+
+# 📦 Virtual environments
+.venv/
+venv/
+ENV/
+
+# 🔧 Tool caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# 🔒 Secrets & local config
+.env
+*.pem
+*.key
+
+# 💻 IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 📝 Org-specific / local data
+audit_report.md
+batch_prefixes.toml
+
+# 🔒 uv lock (included for reproducibility — uncomment to ignore)
+# uv.lock

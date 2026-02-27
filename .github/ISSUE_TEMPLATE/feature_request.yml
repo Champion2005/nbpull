@@ -1,0 +1,52 @@
+name: ✨ Feature Request
+description: Suggest a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea to make nbpull better? We'd love to hear it!
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 🤔 Problem
+      description: What problem does this feature solve? What's the use case?
+      placeholder: "I often need to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 💡 Proposed Solution
+      description: Describe how you'd like this to work.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternatives Considered
+      description: Any alternative approaches you've thought about.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 📐 Scope
+      description: What area does this affect?
+      options:
+        - New command
+        - New filter / option
+        - Output formatting
+        - Configuration
+        - Performance
+        - Documentation
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 📎 Additional Context
+      description: Any other context, mockups, or examples.
