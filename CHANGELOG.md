@@ -9,6 +9,8 @@ project adheres to
 
 ## [Unreleased]
 
+## [0.1.3] — 2026-02-27
+
 ### Added
 
 - 🛠️ `setup` command — interactive wizard that creates `.env`, tests
@@ -73,7 +75,8 @@ project adheres to
 - 🔒 Read-only safety guarantee — only GET requests, ever
 - ⚙️ Configuration via `.env` / environment variables (pydantic-settings)
 
-[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/Champion2005/nbpull/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Champion2005/nbpull/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Champion2005/nbpull/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Champion2005/nbpull/releases/tag/v0.1.0
