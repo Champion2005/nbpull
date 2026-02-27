@@ -3,11 +3,6 @@
 Thanks for your interest in contributing! This guide will help you
 get started.
 
-## 📋 Code of Conduct
-
-By participating in this project you agree to abide by our
-[Code of Conduct](CODE_OF_CONDUCT.md).
-
 ## 🚀 Getting Started
 
 ### Prerequisites

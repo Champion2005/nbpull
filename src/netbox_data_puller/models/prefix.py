@@ -1,34 +1,16 @@
 """📦 Pydantic model for NetBox IPAM Prefix."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+from netbox_data_puller.models.common import ChoiceRef, NestedRef
+
+__all__ = ["Prefix"]
 
 
-class NestedRef(BaseModel):
-    """Nested reference to a related object (id + display name)."""
-
-    id: int
-    display: str
-
-
-class ChoiceRef(BaseModel):
-    """NetBox v4 choice/enum field (value + label).
-
-    Used for status, role, and other enumerated fields that
-    return {"value": "active", "label": "Active"} instead of
-    {"id": 1, "display": "Active"}.
-    """
-
-    value: str
-    label: str
-
-    @property
-    def display(self) -> str:
-        """Consistent interface with NestedRef."""
-        return self.label
-
-
-class Prefix(BaseModel, extra="allow"):
+class Prefix(BaseModel):
     """NetBox IPAM Prefix resource."""
+
+    model_config = ConfigDict(extra="allow")
 
     id: int
     display: str

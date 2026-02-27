@@ -1,12 +1,16 @@
 """📦 Pydantic model for NetBox IPAM VLAN."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from netbox_data_puller.models.prefix import ChoiceRef, NestedRef
+from netbox_data_puller.models.common import ChoiceRef, NestedRef
+
+__all__ = ["VLAN"]
 
 
-class VLAN(BaseModel, extra="allow"):
+class VLAN(BaseModel):
     """NetBox IPAM VLAN resource."""
+
+    model_config = ConfigDict(extra="allow")
 
     id: int
     display: str

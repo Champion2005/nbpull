@@ -1,9 +1,15 @@
 """🧪 Tests for Pydantic models — validation with real-ish NetBox payloads."""
 
-from netbox_data_puller.models.ip_address import IPAddress
-from netbox_data_puller.models.prefix import Prefix
-from netbox_data_puller.models.vlan import VLAN
-from netbox_data_puller.models.vrf import VRF
+from netbox_data_puller.models import (
+    VLAN,
+    VRF,
+    ChoiceRef,
+    IPAddress,
+    NestedRef,
+    Prefix,
+)
+from netbox_data_puller.models.common import ChoiceRef as CommonChoiceRef
+from netbox_data_puller.models.common import NestedRef as CommonNestedRef
 
 
 class TestPrefixModel:
@@ -106,3 +112,147 @@ class TestVRFModel:
         )
         assert vrf.rd == "65000:100"
         assert vrf.tenant is not None
+
+
+# ------------------------------------------------------------------
+# extra="allow" tests — unknown fields must survive
+# ------------------------------------------------------------------
+
+
+class TestExtraAllow:
+    """Verify that extra='allow' is set and unknown fields are preserved."""
+
+    def test_prefix_preserves_extra_fields(self) -> None:
+        p = Prefix.model_validate(
+            {
+                "id": 1,
+                "display": "10.0.0.0/8",
+                "prefix": "10.0.0.0/8",
+                "url": "https://netbox.example.com/api/ipam/prefixes/1/",
+                "custom_fields": {"foo": "bar"},
+            }
+        )
+        extras = p.model_extra or {}
+        assert "url" in extras
+        assert "custom_fields" in extras
+
+    def test_ip_address_preserves_extra_fields(self) -> None:
+        ip = IPAddress.model_validate(
+            {
+                "id": 1,
+                "display": "10.0.0.1/32",
+                "address": "10.0.0.1/32",
+                "created": "2024-01-01",
+            }
+        )
+        assert (ip.model_extra or {}).get("created") == "2024-01-01"
+
+    def test_vlan_preserves_extra_fields(self) -> None:
+        v = VLAN.model_validate(
+            {
+                "id": 1,
+                "display": "VLAN 100",
+                "vid": 100,
+                "name": "Mgmt",
+                "created": "2024-01-01",
+            }
+        )
+        assert "created" in (v.model_extra or {})
+
+    def test_vrf_preserves_extra_fields(self) -> None:
+        vrf = VRF.model_validate(
+            {
+                "id": 1,
+                "display": "Global",
+                "name": "Global",
+                "created": "2024-01-01",
+            }
+        )
+        assert "created" in (vrf.model_extra or {})
+
+    def test_nested_ref_preserves_extra_fields(self) -> None:
+        ref = NestedRef.model_validate(
+            {"id": 1, "display": "Foo", "url": "https://example.com", "name": "Foo"}
+        )
+        extras = ref.model_extra or {}
+        assert "url" in extras
+        assert "name" in extras
+
+    def test_choice_ref_preserves_extra_fields(self) -> None:
+        ref = ChoiceRef.model_validate(
+            {"value": "active", "label": "Active", "extra_key": True}
+        )
+        assert (ref.model_extra or {}).get("extra_key") is True
+
+
+# ------------------------------------------------------------------
+# models/__init__.py re-export tests
+# ------------------------------------------------------------------
+
+
+class TestModelsInit:
+    """Verify all public models are re-exported from models/__init__."""
+
+    def test_re_exports_prefix(self) -> None:
+        assert Prefix is not None
+
+    def test_re_exports_ip_address(self) -> None:
+        assert IPAddress is not None
+
+    def test_re_exports_vlan(self) -> None:
+        assert VLAN is not None
+
+    def test_re_exports_vrf(self) -> None:
+        assert VRF is not None
+
+    def test_re_exports_nested_ref(self) -> None:
+        assert NestedRef is CommonNestedRef
+
+    def test_re_exports_choice_ref(self) -> None:
+        assert ChoiceRef is CommonChoiceRef
+
+
+# ------------------------------------------------------------------
+# Missing optional fields
+# ------------------------------------------------------------------
+
+
+class TestMissingOptionalFields:
+    """Edge case: all optional fields absent."""
+
+    def test_prefix_all_optional_absent(self) -> None:
+        p = Prefix.model_validate(
+            {"id": 1, "display": "10.0.0.0/8", "prefix": "10.0.0.0/8"}
+        )
+        assert p.status is None
+        assert p.vrf is None
+        assert p.tenant is None
+        assert p.site is None
+        assert p.vlan is None
+        assert p.role is None
+        assert p.is_pool is False
+        assert p.description == ""
+        assert p.tags == []
+
+    def test_ip_all_optional_absent(self) -> None:
+        ip = IPAddress.model_validate(
+            {"id": 1, "display": "10.0.0.1/32", "address": "10.0.0.1/32"}
+        )
+        assert ip.status is None
+        assert ip.vrf is None
+        assert ip.dns_name == ""
+        assert ip.tags == []
+
+    def test_vlan_all_optional_absent(self) -> None:
+        v = VLAN.model_validate(
+            {"id": 1, "display": "VLAN 1", "vid": 1, "name": "Default"}
+        )
+        assert v.status is None
+        assert v.group is None
+        assert v.tags == []
+
+    def test_vrf_all_optional_absent(self) -> None:
+        vrf = VRF.model_validate({"id": 1, "display": "Global", "name": "Global"})
+        assert vrf.rd is None
+        assert vrf.tenant is None
+        assert vrf.tags == []

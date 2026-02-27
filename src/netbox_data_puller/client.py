@@ -10,7 +10,7 @@ from typing import Any
 
 import httpx
 
-from netbox_data_puller.config import Settings
+from netbox_data_puller.config import NetBoxSettings
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class NetBoxClient:
     or possible through this client.
     """
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: NetBoxSettings) -> None:
         base_url = str(settings.url).rstrip("/")
         self._base_url = f"{base_url}/api"
         self._page_size = settings.page_size

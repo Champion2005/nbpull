@@ -1,12 +1,16 @@
 """📦 Pydantic model for NetBox IPAM IP Address."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from netbox_data_puller.models.prefix import ChoiceRef, NestedRef
+from netbox_data_puller.models.common import ChoiceRef, NestedRef
+
+__all__ = ["IPAddress"]
 
 
-class IPAddress(BaseModel, extra="allow"):
+class IPAddress(BaseModel):
     """NetBox IPAM IP Address resource."""
+
+    model_config = ConfigDict(extra="allow")
 
     id: int
     display: str

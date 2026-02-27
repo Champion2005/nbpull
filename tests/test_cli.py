@@ -239,3 +239,230 @@ class TestStatusOnly:
         assert result.exit_code == 0
         assert "Batch Prefix Status" in result.output
         assert "Description" not in result.output or "Batch" in result.output
+
+
+# ------------------------------------------------------------------
+# Mock data for other resource types
+# ------------------------------------------------------------------
+
+MOCK_IP_RESPONSE = [
+    {
+        "id": 10,
+        "display": "10.0.0.1/32",
+        "address": "10.0.0.1/32",
+        "status": {"value": "active", "label": "Active"},
+        "vrf": None,
+        "tenant": None,
+        "role": None,
+        "dns_name": "server01.example.com",
+        "description": "Test IP",
+        "tags": [],
+    },
+]
+
+MOCK_VLAN_RESPONSE = [
+    {
+        "id": 1,
+        "display": "VLAN 100",
+        "vid": 100,
+        "name": "Management",
+        "status": {"value": "active", "label": "Active"},
+        "tenant": None,
+        "site": None,
+        "group": None,
+        "role": None,
+        "description": "Mgmt VLAN",
+        "tags": [],
+    },
+]
+
+MOCK_VRF_RESPONSE = [
+    {
+        "id": 5,
+        "display": "Production",
+        "name": "Production",
+        "rd": "65000:100",
+        "tenant": None,
+        "enforce_unique": True,
+        "description": "Prod VRF",
+        "tags": [],
+    },
+]
+
+
+# ------------------------------------------------------------------
+# ip-addresses command
+# ------------------------------------------------------------------
+
+
+class TestIPAddressesCommand:
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_ip_addresses_table(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_IP_RESPONSE
+        result = runner.invoke(app, ["ip-addresses"])
+        assert result.exit_code == 0
+        assert "10.0.0.1" in result.output
+        assert "IP Addresses" in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_ip_addresses_json(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_IP_RESPONSE
+        result = runner.invoke(app, ["ip-addresses", "--format", "json"])
+        assert result.exit_code == 0
+        assert '"address"' in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_ip_addresses_passes_filters(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        runner.invoke(
+            app,
+            [
+                "ip-addresses",
+                "--status",
+                "active",
+                "--vrf",
+                "Production",
+                "--site",
+                "DC1",
+                "--prefix",
+                "10.0.0.0/24",
+            ],
+        )
+        call_args = mock_fetch.call_args
+        params = call_args[0][1]
+        assert params["status"] == "active"
+        assert params["vrf"] == "Production"
+        assert params["site"] == "DC1"
+        assert params["parent"] == "10.0.0.0/24"
+
+
+# ------------------------------------------------------------------
+# vlans command
+# ------------------------------------------------------------------
+
+
+class TestVLANsCommand:
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_vlans_table(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_VLAN_RESPONSE
+        result = runner.invoke(app, ["vlans"])
+        assert result.exit_code == 0
+        # Rich may truncate in narrow test terminal
+        assert "Managem" in result.output
+        assert "VLANs" in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_vlans_json(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_VLAN_RESPONSE
+        result = runner.invoke(app, ["vlans", "--format", "json"])
+        assert result.exit_code == 0
+        assert '"vid"' in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_vlans_passes_filters(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        runner.invoke(
+            app,
+            ["vlans", "--status", "active", "--site", "DC1", "--tag", "prod"],
+        )
+        call_args = mock_fetch.call_args
+        params = call_args[0][1]
+        assert params["status"] == "active"
+        assert params["site"] == "DC1"
+        assert params["tag"] == "prod"
+
+
+# ------------------------------------------------------------------
+# vrfs command
+# ------------------------------------------------------------------
+
+
+class TestVRFsCommand:
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_vrfs_table(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_VRF_RESPONSE
+        result = runner.invoke(app, ["vrfs"])
+        assert result.exit_code == 0
+        assert "Production" in result.output
+        assert "VRFs" in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_vrfs_json(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_VRF_RESPONSE
+        result = runner.invoke(app, ["vrfs", "--format", "json"])
+        assert result.exit_code == 0
+        assert '"name"' in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_vrfs_passes_filters(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        runner.invoke(
+            app,
+            ["vrfs", "--tenant", "Ops", "--tag", "core", "--search", "prod"],
+        )
+        call_args = mock_fetch.call_args
+        params = call_args[0][1]
+        assert params["tenant"] == "Ops"
+        assert params["tag"] == "core"
+        assert params["q"] == "prod"
+
+
+# ------------------------------------------------------------------
+# Config exit code
+# ------------------------------------------------------------------
+
+
+class TestConfigError:
+    def test_missing_config_exits_with_code_2(self) -> None:
+        """Config/auth failure must exit with code 2 per CLI instructions."""
+        with patch(
+            "netbox_data_puller.cli._get_settings",
+            side_effect=SystemExit(2),
+        ):
+            result = runner.invoke(app, ["prefixes"])
+            assert result.exit_code == 2

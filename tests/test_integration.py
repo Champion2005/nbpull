@@ -19,7 +19,7 @@ import os
 import pytest
 
 from netbox_data_puller.client import NetBoxClient
-from netbox_data_puller.config import Settings
+from netbox_data_puller.config import NetBoxSettings
 from netbox_data_puller.models.ip_address import IPAddress
 from netbox_data_puller.models.prefix import Prefix
 from netbox_data_puller.models.vlan import VLAN
@@ -46,15 +46,15 @@ pytestmark = [
 
 
 @pytest.fixture(scope="module")
-def settings() -> Settings:
+def settings() -> NetBoxSettings:
     """Load real settings from .env / environment."""
-    return Settings()  # type: ignore[call-arg]
+    return NetBoxSettings()  # type: ignore[call-arg]
 
 
 @pytest.fixture(scope="module")
-def small_page_settings(settings: Settings) -> Settings:
+def small_page_settings(settings: NetBoxSettings) -> NetBoxSettings:
     """Settings with a tiny page_size to test pagination."""
-    return Settings.model_validate(
+    return NetBoxSettings.model_validate(
         {
             "url": str(settings.url),
             "token": settings.token,
@@ -66,7 +66,7 @@ def small_page_settings(settings: Settings) -> Settings:
 
 
 @pytest.fixture
-async def client(settings: Settings) -> NetBoxClient:  # type: ignore[misc]
+async def client(settings: NetBoxSettings) -> NetBoxClient:  # type: ignore[misc]
     """Provide a real NetBoxClient that cleans up after itself."""
     c = NetBoxClient(settings)
     yield c  # type: ignore[misc]
@@ -299,7 +299,7 @@ class TestPaginationIntegration:
 
     async def test_pagination_aggregates_results(
         self,
-        small_page_settings: Settings,
+        small_page_settings: NetBoxSettings,
     ) -> None:
         """Fetch with page_size=2 to force multiple pages on a small result."""
         async with NetBoxClient(small_page_settings) as client:
@@ -320,7 +320,7 @@ class TestPaginationIntegration:
 class TestClientLifecycle:
     """Verify async context manager works against live API."""
 
-    async def test_context_manager(self, settings: Settings) -> None:
+    async def test_context_manager(self, settings: NetBoxSettings) -> None:
         async with NetBoxClient(settings) as client:
             results = await client.get(
                 "ipam/prefixes/",

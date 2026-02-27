@@ -24,7 +24,7 @@ from rich.progress import (
 from rich.text import Text
 
 from netbox_data_puller.client import NetBoxClient
-from netbox_data_puller.config import Settings
+from netbox_data_puller.config import NetBoxSettings
 from netbox_data_puller.formatters import (
     print_batch_summary,
     print_ip_addresses,
@@ -118,10 +118,10 @@ def _build_params(**kwargs: Any) -> dict[str, Any]:
     return {k: v for k, v in kwargs.items() if v is not None}
 
 
-def _get_settings() -> Settings:
+def _get_settings() -> NetBoxSettings:
     """Load settings, with a friendly error on misconfiguration."""
     try:
-        return Settings()
+        return NetBoxSettings()
     except Exception as exc:
         console.print(
             f"[bold red]❌ Configuration error:[/bold red] {exc}\n\n"
@@ -129,7 +129,7 @@ def _get_settings() -> Settings:
             ".env file or environment variables.\n"
             "See .env.example for reference.",
         )
-        raise typer.Exit(code=1) from exc
+        raise typer.Exit(code=2) from exc
 
 
 def _configure_logging(verbose: bool) -> None:
@@ -222,6 +222,7 @@ def ip_addresses(
     status: StatusOpt = None,
     vrf: VRFOpt = None,
     tenant: TenantOpt = None,
+    site: SiteOpt = None,
     tag: TagOpt = None,
     search: SearchOpt = None,
     prefix: Annotated[
@@ -241,6 +242,7 @@ def ip_addresses(
         status=status,
         vrf=vrf,
         tenant=tenant,
+        site=site,
         tag=tag,
         q=search,
         parent=prefix,

@@ -1,12 +1,16 @@
 """📦 Pydantic model for NetBox IPAM VRF."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from netbox_data_puller.models.prefix import NestedRef
+from netbox_data_puller.models.common import NestedRef
+
+__all__ = ["VRF"]
 
 
-class VRF(BaseModel, extra="allow"):
+class VRF(BaseModel):
     """NetBox IPAM VRF resource."""
+
+    model_config = ConfigDict(extra="allow")
 
     id: int
     display: str

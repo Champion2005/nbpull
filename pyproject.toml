@@ -1,6 +1,6 @@
 [project]
 name = "nbpull"
-version = "0.1.1"
+version = "0.1.2"
 description = "🔍 Read-only CLI tool to pull IPAM data from NetBox"
 readme = "README.md"
 license = "GPL-3.0-only"

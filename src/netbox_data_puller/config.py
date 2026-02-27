@@ -4,7 +4,7 @@ from pydantic import HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):
+class NetBoxSettings(BaseSettings):
     """NetBox connection settings.
 
     Reads from environment variables or a .env file in the project root.
