@@ -319,3 +319,232 @@ def print_vrfs(records: list[Any]) -> None:
 
     console.print(table)
     console.print(f"[dim]  {len(records)} VRFs[/dim]\n")
+
+
+# ------------------------------------------------------------------
+# Aggregates
+# ------------------------------------------------------------------
+
+
+def print_aggregates(records: list[Any]) -> None:
+    """Render IP aggregates as a Rich table."""
+    table = Table(
+        title="📊 IPAM Aggregates",
+        show_lines=True,
+        header_style="bold cyan",
+        title_style="bold",
+    )
+    table.add_column("ID", style="dim", justify="right")
+    table.add_column("Prefix", style="bold green")
+    table.add_column("RIR")
+    table.add_column("Tenant")
+    table.add_column("Date Added")
+    table.add_column("Description", max_width=30)
+    table.add_column("Tags")
+
+    for r in records:
+        table.add_row(
+            str(r.id),
+            r.prefix,
+            _display_or_dash(r.rir),
+            _display_or_dash(r.tenant),
+            r.date_added or "—",
+            r.description or "—",
+            _tags_str(r.tags),
+        )
+
+    console.print(table)
+    console.print(f"[dim]  {len(records)} aggregates[/dim]\n")
+
+
+# ------------------------------------------------------------------
+# Sites
+# ------------------------------------------------------------------
+
+
+def print_sites(records: list[Any]) -> None:
+    """Render DCIM sites as a Rich table."""
+    table = Table(
+        title="🏢 DCIM Sites",
+        show_lines=True,
+        header_style="bold cyan",
+        title_style="bold",
+    )
+    table.add_column("ID", style="dim", justify="right")
+    table.add_column("Name", style="bold green")
+    table.add_column("Slug", style="dim")
+    table.add_column("Status")
+    table.add_column("Region")
+    table.add_column("Tenant")
+    table.add_column("Facility")
+    table.add_column("Description", max_width=30)
+    table.add_column("Tags")
+
+    for r in records:
+        table.add_row(
+            str(r.id),
+            r.name,
+            r.slug,
+            _styled_status(r.status),
+            _display_or_dash(r.region),
+            _display_or_dash(r.tenant),
+            r.facility or "—",
+            r.description or "—",
+            _tags_str(r.tags),
+        )
+
+    console.print(table)
+    console.print(f"[dim]  {len(records)} sites[/dim]\n")
+
+
+# ------------------------------------------------------------------
+# Devices
+# ------------------------------------------------------------------
+
+
+def print_devices(records: list[Any]) -> None:
+    """Render DCIM devices as a Rich table."""
+    table = Table(
+        title="🖧 DCIM Devices",
+        show_lines=True,
+        header_style="bold cyan",
+        title_style="bold",
+    )
+    table.add_column("ID", style="dim", justify="right")
+    table.add_column("Name", style="bold green")
+    table.add_column("Status")
+    table.add_column("Site")
+    table.add_column("Role")
+    table.add_column("Device Type", max_width=20)
+    table.add_column("Tenant")
+    table.add_column("Tags")
+
+    for r in records:
+        table.add_row(
+            str(r.id),
+            r.name or "—",
+            _styled_status(r.status),
+            _display_or_dash(r.site),
+            _display_or_dash(r.role),
+            _display_or_dash(r.device_type),
+            _display_or_dash(r.tenant),
+            _tags_str(r.tags),
+        )
+
+    console.print(table)
+    console.print(f"[dim]  {len(records)} devices[/dim]\n")
+
+
+# ------------------------------------------------------------------
+# Tenants
+# ------------------------------------------------------------------
+
+
+def print_tenants(records: list[Any]) -> None:
+    """Render tenancy tenants as a Rich table."""
+    table = Table(
+        title="🏛️ Tenancy Tenants",
+        show_lines=True,
+        header_style="bold cyan",
+        title_style="bold",
+    )
+    table.add_column("ID", style="dim", justify="right")
+    table.add_column("Name", style="bold green")
+    table.add_column("Slug", style="dim")
+    table.add_column("Group")
+    table.add_column("Description", max_width=30)
+    table.add_column("Tags")
+
+    for r in records:
+        table.add_row(
+            str(r.id),
+            r.name,
+            r.slug,
+            _display_or_dash(r.group),
+            r.description or "—",
+            _tags_str(r.tags),
+        )
+
+    console.print(table)
+    console.print(f"[dim]  {len(records)} tenants[/dim]\n")
+
+
+# ------------------------------------------------------------------
+# RFC 1918 Inventory
+# ------------------------------------------------------------------
+
+_RFC1918_CIDR_MAP = {
+    "10": "10.0.0.0/8",
+    "172": "172.16.0.0/12",
+    "192": "192.168.0.0/16",
+}
+
+
+def _rfc1918_block(prefix_str: str) -> str:
+    """Return the RFC 1918 supernet block for a given prefix string."""
+    first_octet = prefix_str.split(".")[0]
+    return _RFC1918_CIDR_MAP.get(first_octet, "—")
+
+
+def _mapping_status(r: Any) -> str:
+    """Derive mapping status from site/tenant assignments.
+
+    - ``mapped``    — has **both** site and tenant
+    - ``unmapped``  — has **neither** site nor tenant
+    - ``ambiguous`` — has one but not the other (partial documentation)
+    """
+    has_site = r.site is not None
+    has_tenant = r.tenant is not None
+    if has_site and has_tenant:
+        return "mapped"
+    if not has_site and not has_tenant:
+        return "unmapped"
+    return "ambiguous"
+
+
+def _styled_mapping(status: str) -> Text:
+    """Return a colour-coded Rich Text for mapping status."""
+    styles = {
+        "mapped": "bold green",
+        "unmapped": "bold red",
+        "ambiguous": "bold yellow",
+    }
+    return Text(status, style=styles.get(status, ""))
+
+
+def print_rfc1918_inventory(records: list[Any]) -> None:
+    """Render RFC 1918 Global VRF prefix inventory as a Rich table."""
+    table = Table(
+        title="🏠 RFC 1918 Global VRF Prefix Inventory",
+        show_lines=True,
+        header_style="bold cyan",
+        title_style="bold",
+    )
+    table.add_column("Prefix", style="bold green")
+    table.add_column("Block")
+    table.add_column("Mapping")
+    table.add_column("Status")
+    table.add_column("Site")
+    table.add_column("Tenant")
+
+    for r in records:
+        table.add_row(
+            r.prefix,
+            _rfc1918_block(r.prefix),
+            _styled_mapping(_mapping_status(r)),
+            _styled_status(r.status),
+            _display_or_dash(r.site),
+            _display_or_dash(r.tenant),
+        )
+
+    mapped = sum(1 for r in records if _mapping_status(r) == "mapped")
+    unmapped = sum(1 for r in records if _mapping_status(r) == "unmapped")
+    ambiguous = len(records) - mapped - unmapped
+
+    console.print(table)
+    console.print(
+        f"[dim]  {len(records)} prefixes — "
+        f"[green]{mapped} mapped[/green], "
+        f"[red]{unmapped} unmapped[/red], "
+        f"[yellow]{ambiguous} ambiguous[/yellow][/dim]\n"
+    )

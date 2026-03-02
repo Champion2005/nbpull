@@ -29,16 +29,25 @@ from rich.text import Text
 from netbox_data_puller.client import NetBoxClient
 from netbox_data_puller.config import NetBoxSettings
 from netbox_data_puller.formatters import (
+    print_aggregates,
     print_batch_summary,
+    print_devices,
     print_ip_addresses,
     print_json,
     print_prefixes,
     print_prefixes_status,
+    print_rfc1918_inventory,
+    print_sites,
+    print_tenants,
     print_vlans,
     print_vrfs,
 )
+from netbox_data_puller.models.aggregate import Aggregate
+from netbox_data_puller.models.device import Device
 from netbox_data_puller.models.ip_address import IPAddress
 from netbox_data_puller.models.prefix import Prefix
+from netbox_data_puller.models.site import Site
+from netbox_data_puller.models.tenant import Tenant
 from netbox_data_puller.models.vlan import VLAN
 from netbox_data_puller.models.vrf import VRF
 
@@ -107,6 +116,21 @@ StatusOnlyOpt = Annotated[
     typer.Option(
         "--status-only",
         help="Show only prefix and status columns.",
+    ),
+]
+RoleOpt = Annotated[
+    str | None,
+    typer.Option("--role", help="Filter by role name."),
+]
+RegionOpt = Annotated[
+    str | None,
+    typer.Option("--region", help="Filter by region name."),
+]
+MappingStatusOpt = Annotated[
+    str | None,
+    typer.Option(
+        "--mapping-status",
+        help="Filter by mapping status (mapped/unmapped/ambiguous).",
     ),
 ]
 
@@ -265,7 +289,7 @@ async def _run_probe(url: str, token: str) -> list[tuple[str, bool, str]]:
 def setup(
     verbose: VerboseOpt = False,
 ) -> None:
-    """🛠️  Interactive setup wizard for configuring nbpull.
+    """🛠️ Interactive setup wizard for configuring nbpull.
 
     Walks you through:
     1. Creating a .env file with your NetBox URL and API token
@@ -543,6 +567,11 @@ def setup(
             "  [cyan]nbpull ip-addresses[/cyan]       — list IPs\n"
             "  [cyan]nbpull vlans[/cyan]              — list VLANs\n"
             "  [cyan]nbpull vrfs[/cyan]               — list VRFs\n"
+            "  [cyan]nbpull aggregates[/cyan]         — list IP aggregates\n"
+            "  [cyan]nbpull sites[/cyan]              — list DCIM sites\n"
+            "  [cyan]nbpull devices[/cyan]            — list DCIM devices\n"
+            "  [cyan]nbpull tenants[/cyan]            — list tenants\n"
+            "  [cyan]nbpull rfc1918[/cyan]            — RFC 1918 inventory\n"
             "  [cyan]nbpull batch-prefixes[/cyan]     — batch query",
             title="🎉 Done",
             border_style="green",
@@ -614,7 +643,7 @@ def ip_addresses(
     fmt: FormatOpt = OutputFormat.table,
     verbose: VerboseOpt = False,
 ) -> None:
-    """🖥️  List IPAM IP addresses from NetBox."""
+    """🖥️ List IPAM IP addresses from NetBox."""
     _configure_logging(verbose)
     params = _build_params(
         status=status,
@@ -650,7 +679,7 @@ def vlans(
     fmt: FormatOpt = OutputFormat.table,
     verbose: VerboseOpt = False,
 ) -> None:
-    """🏷️  List IPAM VLANs from NetBox."""
+    """🏷️ List IPAM VLANs from NetBox."""
     _configure_logging(verbose)
     params = _build_params(
         status=status,
@@ -701,6 +730,240 @@ def vrfs(
         print_json(records)
     else:
         print_vrfs(records)
+
+
+@app.command()
+def aggregates(
+    rir: Annotated[
+        str | None,
+        typer.Option("--rir", help="Filter by RIR name (e.g. ARIN, RIPE, RFC1918)."),
+    ] = None,
+    tenant: TenantOpt = None,
+    tag: TagOpt = None,
+    search: SearchOpt = None,
+    limit: LimitOpt = 50,
+    fmt: FormatOpt = OutputFormat.table,
+    verbose: VerboseOpt = False,
+) -> None:
+    """📊 List IPAM aggregates (top-level IP space) from NetBox."""
+    _configure_logging(verbose)
+    params = _build_params(
+        rir=rir,
+        tenant=tenant,
+        tag=tag,
+        q=search,
+    )
+    raw = _fetch_with_spinner(
+        "ipam/aggregates/",
+        params,
+        "Fetching aggregates",
+        max_results=limit,
+    )
+    records = [Aggregate.model_validate(r) for r in raw]
+
+    if fmt == OutputFormat.json:
+        print_json(records)
+    else:
+        print_aggregates(records)
+
+
+@app.command()
+def sites(
+    status: StatusOpt = None,
+    tenant: TenantOpt = None,
+    region: RegionOpt = None,
+    tag: TagOpt = None,
+    search: SearchOpt = None,
+    limit: LimitOpt = 50,
+    fmt: FormatOpt = OutputFormat.table,
+    verbose: VerboseOpt = False,
+) -> None:
+    """🏢 List DCIM sites from NetBox."""
+    _configure_logging(verbose)
+    params = _build_params(
+        status=status,
+        tenant=tenant,
+        region=region,
+        tag=tag,
+        q=search,
+    )
+    raw = _fetch_with_spinner(
+        "dcim/sites/",
+        params,
+        "Fetching sites",
+        max_results=limit,
+    )
+    records = [Site.model_validate(r) for r in raw]
+
+    if fmt == OutputFormat.json:
+        print_json(records)
+    else:
+        print_sites(records)
+
+
+@app.command()
+def devices(
+    status: StatusOpt = None,
+    site: SiteOpt = None,
+    tenant: TenantOpt = None,
+    role: RoleOpt = None,
+    tag: TagOpt = None,
+    search: SearchOpt = None,
+    limit: LimitOpt = 50,
+    fmt: FormatOpt = OutputFormat.table,
+    verbose: VerboseOpt = False,
+) -> None:
+    """🖧  List DCIM devices from NetBox."""
+    _configure_logging(verbose)
+    params = _build_params(
+        status=status,
+        site=site,
+        tenant=tenant,
+        role=role,
+        tag=tag,
+        q=search,
+    )
+    raw = _fetch_with_spinner(
+        "dcim/devices/",
+        params,
+        "Fetching devices",
+        max_results=limit,
+    )
+    records = [Device.model_validate(r) for r in raw]
+
+    if fmt == OutputFormat.json:
+        print_json(records)
+    else:
+        print_devices(records)
+
+
+@app.command()
+def tenants(
+    group: Annotated[
+        str | None,
+        typer.Option("--group", help="Filter by tenant group name."),
+    ] = None,
+    tag: TagOpt = None,
+    search: SearchOpt = None,
+    limit: LimitOpt = 50,
+    fmt: FormatOpt = OutputFormat.table,
+    verbose: VerboseOpt = False,
+) -> None:
+    """🏛️ List tenancy tenants from NetBox."""
+    _configure_logging(verbose)
+    params = _build_params(
+        group=group,
+        tag=tag,
+        q=search,
+    )
+    raw = _fetch_with_spinner(
+        "tenancy/tenants/",
+        params,
+        "Fetching tenants",
+        max_results=limit,
+    )
+    records = [Tenant.model_validate(r) for r in raw]
+
+    if fmt == OutputFormat.json:
+        print_json(records)
+    else:
+        print_tenants(records)
+
+
+# ------------------------------------------------------------------
+# RFC 1918 Inventory
+# ------------------------------------------------------------------
+
+_RFC1918_BLOCKS = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+
+
+async def _fetch_rfc1918_blocks(
+    max_results: int | None = None,
+) -> list[dict[str, Any]]:
+    """Fetch Global VRF prefixes within RFC 1918 space.
+
+    Issues three requests — one per canonical RFC 1918 supernet — using
+    ``within_include`` to capture all sub-prefixes.  Results are filtered
+    to the **Global VRF** (``vrf == null``) in Python, because NetBox does
+    not support a ``vrf_id=null`` query parameter across all versions.
+    Deduplicates by prefix ID.
+    """
+    settings = _get_settings()
+    seen: set[int] = set()
+    results: list[dict[str, Any]] = []
+    async with NetBoxClient(settings) as client:
+        for block in _RFC1918_BLOCKS:
+            raw = await client.get(
+                "ipam/prefixes/",
+                {"within_include": block},
+                max_results=max_results,
+            )
+            for r in raw:
+                # Keep only Global VRF (no VRF assignment)
+                if r.get("vrf") is not None:
+                    continue
+                if r["id"] not in seen:
+                    seen.add(r["id"])
+                    results.append(r)
+    return results
+
+
+def _rfc1918_mapping_status(prefix: Prefix) -> str:
+    """Derive mapping status from site/tenant assignments.
+
+    - ``mapped``    — has **both** site and tenant
+    - ``unmapped``  — has **neither** site nor tenant
+    - ``ambiguous`` — has one but not the other
+    """
+    has_site = prefix.site is not None
+    has_tenant = prefix.tenant is not None
+    if has_site and has_tenant:
+        return "mapped"
+    if not has_site and not has_tenant:
+        return "unmapped"
+    return "ambiguous"
+
+
+@app.command()
+def rfc1918(
+    mapping_status: MappingStatusOpt = None,
+    limit: LimitOpt = 500,
+    fmt: FormatOpt = OutputFormat.table,
+    verbose: VerboseOpt = False,
+) -> None:
+    """🏠 RFC 1918 Global VRF prefix inventory with mapping status.
+
+    Queries all three RFC 1918 blocks (10/8, 172.16/12, 192.168/16)
+    from the Global VRF (no VRF) and labels each prefix:
+
+    \b
+      mapped    — has both site and tenant
+      unmapped  — has neither site nor tenant
+      ambiguous — has one but not the other
+
+    Use --mapping-status to filter by a specific label.
+    """
+    _configure_logging(verbose)
+
+    with Progress(
+        SpinnerColumn("dots"),
+        TextColumn("[bold cyan]{task.description}"),
+        TimeElapsedColumn(),
+        console=console,
+        transient=True,
+    ) as progress:
+        progress.add_task("Fetching RFC 1918 prefixes…", total=None)
+        raw = asyncio.run(_fetch_rfc1918_blocks(max_results=limit))
+
+    records = [Prefix.model_validate(r) for r in raw]
+
+    if mapping_status:
+        records = [r for r in records if _rfc1918_mapping_status(r) == mapping_status]
+
+    if fmt == OutputFormat.json:
+        print_json(records)
+    else:
+        print_rfc1918_inventory(records)
 
 
 # ------------------------------------------------------------------

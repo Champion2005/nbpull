@@ -9,6 +9,46 @@ project adheres to
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-03-02
+
+### Added
+
+- 📊 `aggregates` command — list IPAM aggregates (top-level IP space by
+  RIR) with `--rir`, `--tenant`, `--tag`, `--search`, `--limit`, and
+  `--format` filters
+- 🏢 `sites` command — list DCIM sites with `--status`, `--tenant`,
+  `--region`, `--tag`, `--search`, `--limit`, and `--format` filters
+- 🖧 `devices` command — list DCIM devices with `--status`, `--site`,
+  `--tenant`, `--role`, `--tag`, `--search`, `--limit`, and `--format`
+  filters; table shows ID, Name, Status, Site, Role, Device Type,
+  Tenant, Tags; full detail available via `--format json`
+- 🏛️ `tenants` command — list Tenancy tenants with `--group`, `--tag`,
+  `--search`, `--limit`, and `--format` filters
+- 📦 Pydantic models: `Aggregate` (`models/aggregate.py`),
+  `Site` (`models/site.py`), `Device` (`models/device.py`),
+  `Tenant` (`models/tenant.py`)
+- 🎨 Rich table formatters: `print_aggregates`, `print_sites`,
+  `print_devices`, `print_tenants` in `formatters.py`
+- 🧪 Tests for all 4 new models, formatters, and CLI commands
+- 🏠 `rfc1918` command — inventory all RFC 1918 prefixes from the Global
+  VRF with computed mapping status (`mapped` / `unmapped` / `ambiguous`)
+  based on site+tenant assignments; supports `--mapping-status` filter
+  and `--format json`; queries all three RFC 1918 supernets
+  (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) using
+  `vrf_id=0&within_include=<block>` per block
+- 🎨 `print_rfc1918_inventory` formatter and `_mapping_status` /
+  `_rfc1918_block` helpers in `formatters.py`
+- 🧪 Tests for `rfc1918` command, formatter, and helpers
+- 🛠️ `setup` completion panel now lists all 9 commands
+
+### Changed
+
+- 📦 `models/__init__.py` now exports `Aggregate`, `Site`, `Device`,
+  `Tenant` alongside existing types
+- 🖧 `print_devices` table renders 8 columns (omits Platform and
+  Primary IP to fit an 80-char terminal; use `--format json` for all
+  fields)
+
 ## [0.1.3] — 2026-02-27
 
 ### Added
@@ -75,7 +115,8 @@ project adheres to
 - 🔒 Read-only safety guarantee — only GET requests, ever
 - ⚙️ Configuration via `.env` / environment variables (pydantic-settings)
 
-[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Champion2005/nbpull/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/Champion2005/nbpull/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Champion2005/nbpull/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Champion2005/nbpull/compare/v0.1.0...v0.1.1

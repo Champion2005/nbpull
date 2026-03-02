@@ -2,20 +2,31 @@
 
 from netbox_data_puller.formatters import (
     _display_or_dash,
+    _mapping_status,
     _prefix_len,
+    _rfc1918_block,
     _styled_status,
     _tags_str,
+    print_aggregates,
     print_batch_summary,
+    print_devices,
     print_ip_addresses,
     print_json,
     print_prefixes,
     print_prefixes_status,
+    print_rfc1918_inventory,
+    print_sites,
+    print_tenants,
     print_vlans,
     print_vrfs,
 )
+from netbox_data_puller.models.aggregate import Aggregate
 from netbox_data_puller.models.common import ChoiceRef, NestedRef
+from netbox_data_puller.models.device import Device
 from netbox_data_puller.models.ip_address import IPAddress
 from netbox_data_puller.models.prefix import Prefix
+from netbox_data_puller.models.site import Site
+from netbox_data_puller.models.tenant import Tenant
 from netbox_data_puller.models.vlan import VLAN
 from netbox_data_puller.models.vrf import VRF
 
@@ -214,3 +225,195 @@ class TestPrintBatchSummary:
         )
         results = [("10.32.16.0/20", [parent])]
         print_batch_summary(results, [])
+
+
+_SAMPLE_AGGREGATE = Aggregate.model_validate(
+    {
+        "id": 1,
+        "display": "10.0.0.0/8",
+        "prefix": "10.0.0.0/8",
+        "rir": {"id": 1, "display": "RFC 1918"},
+        "date_added": "2024-01-01",
+        "description": "Private",
+    }
+)
+
+_SAMPLE_SITE = Site.model_validate(
+    {
+        "id": 1,
+        "display": "DC1",
+        "name": "DC1",
+        "slug": "dc1",
+        "status": {"value": "active", "label": "Active"},
+        "region": {"id": 1, "display": "US East"},
+        "facility": "NY5",
+    }
+)
+
+_SAMPLE_DEVICE = Device.model_validate(
+    {
+        "id": 1,
+        "display": "router01",
+        "name": "router01",
+        "device_type": {"id": 1, "display": "Cisco ASR-9001"},
+        "role": {"id": 1, "display": "Core Router"},
+        "site": {"id": 1, "display": "DC1"},
+        "status": {"value": "active", "label": "Active"},
+        "primary_ip": {"id": 5, "display": "10.0.0.1/32"},
+    }
+)
+
+_SAMPLE_TENANT = Tenant.model_validate(
+    {
+        "id": 1,
+        "display": "Ops",
+        "name": "Ops",
+        "slug": "ops",
+        "group": {"id": 1, "display": "Internal"},
+    }
+)
+
+
+class TestPrintAggregates:
+    def test_renders_without_error(self) -> None:
+        print_aggregates([_SAMPLE_AGGREGATE])
+
+    def test_renders_empty_list(self) -> None:
+        print_aggregates([])
+
+    def test_renders_minimal_aggregate(self) -> None:
+        a = Aggregate.model_validate(
+            {"id": 99, "display": "192.168.0.0/16", "prefix": "192.168.0.0/16"}
+        )
+        print_aggregates([a])
+
+
+class TestPrintSites:
+    def test_renders_without_error(self) -> None:
+        print_sites([_SAMPLE_SITE])
+
+    def test_renders_empty_list(self) -> None:
+        print_sites([])
+
+    def test_renders_minimal_site(self) -> None:
+        s = Site.model_validate(
+            {"id": 1, "display": "DC1", "name": "DC1", "slug": "dc1"}
+        )
+        print_sites([s])
+
+
+class TestPrintDevices:
+    def test_renders_without_error(self) -> None:
+        print_devices([_SAMPLE_DEVICE])
+
+    def test_renders_empty_list(self) -> None:
+        print_devices([])
+
+    def test_renders_unnamed_device(self) -> None:
+        """Devices without a name (name=None) should render '—'."""
+        d = Device.model_validate({"id": 5, "display": "[unnamed]"})
+        print_devices([d])
+
+
+class TestPrintTenants:
+    def test_renders_without_error(self) -> None:
+        print_tenants([_SAMPLE_TENANT])
+
+    def test_renders_empty_list(self) -> None:
+        print_tenants([])
+
+    def test_renders_minimal_tenant(self) -> None:
+        t = Tenant.model_validate(
+            {"id": 1, "display": "Ops", "name": "Ops", "slug": "ops"}
+        )
+        print_tenants([t])
+
+
+# ------------------------------------------------------------------
+# RFC 1918 Inventory
+# ------------------------------------------------------------------
+
+_SAMPLE_RFC1918_MAPPED = Prefix.model_validate(
+    {
+        "id": 10,
+        "display": "10.0.0.0/24",
+        "prefix": "10.0.0.0/24",
+        "status": {"value": "active", "label": "Active"},
+        "site": {"id": 1, "display": "NYC"},
+        "tenant": {"id": 1, "display": "Ops"},
+    }
+)
+_SAMPLE_RFC1918_UNMAPPED = Prefix.model_validate(
+    {
+        "id": 11,
+        "display": "192.168.0.0/24",
+        "prefix": "192.168.0.0/24",
+        "status": {"value": "reserved", "label": "Reserved"},
+        "site": None,
+        "tenant": None,
+    }
+)
+_SAMPLE_RFC1918_AMBIGUOUS = Prefix.model_validate(
+    {
+        "id": 12,
+        "display": "172.16.0.0/24",
+        "prefix": "172.16.0.0/24",
+        "status": {"value": "active", "label": "Active"},
+        "site": {"id": 2, "display": "LAX"},
+        "tenant": None,
+    }
+)
+
+
+class TestRfc1918Block:
+    def test_10_block(self) -> None:
+        assert _rfc1918_block("10.0.1.0/24") == "10.0.0.0/8"
+
+    def test_172_block(self) -> None:
+        assert _rfc1918_block("172.16.5.0/24") == "172.16.0.0/12"
+
+    def test_192_block(self) -> None:
+        assert _rfc1918_block("192.168.1.0/24") == "192.168.0.0/16"
+
+    def test_unknown_block(self) -> None:
+        assert _rfc1918_block("8.8.8.0/24") == "—"
+
+
+class TestMappingStatus:
+    def test_mapped_both(self) -> None:
+        assert _mapping_status(_SAMPLE_RFC1918_MAPPED) == "mapped"
+
+    def test_unmapped_neither(self) -> None:
+        assert _mapping_status(_SAMPLE_RFC1918_UNMAPPED) == "unmapped"
+
+    def test_ambiguous_site_only(self) -> None:
+        assert _mapping_status(_SAMPLE_RFC1918_AMBIGUOUS) == "ambiguous"
+
+    def test_ambiguous_tenant_only(self) -> None:
+        p = Prefix.model_validate(
+            {
+                "id": 99,
+                "display": "10.1.0.0/24",
+                "prefix": "10.1.0.0/24",
+                "site": None,
+                "tenant": {"id": 5, "display": "Corp"},
+            }
+        )
+        assert _mapping_status(p) == "ambiguous"
+
+
+class TestPrintRfc1918Inventory:
+    def test_renders_without_error(self) -> None:
+        print_rfc1918_inventory(
+            [
+                _SAMPLE_RFC1918_MAPPED,
+                _SAMPLE_RFC1918_UNMAPPED,
+                _SAMPLE_RFC1918_AMBIGUOUS,
+            ]
+        )
+
+    def test_renders_empty_list(self) -> None:
+        print_rfc1918_inventory([])
+
+    def test_renders_single_prefix(self) -> None:
+        print_rfc1918_inventory([_SAMPLE_RFC1918_MAPPED])

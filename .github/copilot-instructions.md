@@ -37,11 +37,18 @@ src/netbox_data_puller/
 ├── config.py        # Pydantic Settings (.env / env vars)
 ├── formatters.py    # Rich table + JSON renderers
 └── models/          # Pydantic v2 models per resource type
+    ├── common.py    # Shared types: NestedRef ({id, display}) and ChoiceRef ({value, label})
+    ├── aggregate.py  # IPAM Aggregate
     ├── prefix.py
     ├── ip_address.py
     ├── vlan.py
-    └── vrf.py
+    ├── vrf.py
+    ├── site.py       # DCIM Site
+    ├── device.py     # DCIM Device
+    └── tenant.py     # Tenancy Tenant
 ```
+
+`NestedRef` is used for related objects (e.g. `tenant`, `vrf`). `ChoiceRef` is used for enum fields (e.g. `status`, `role`). Both expose a `.display` property for consistent rendering.
 
 ## Coding Conventions
 
@@ -73,6 +80,7 @@ src/netbox_data_puller/
 - Test files live in `tests/` and mirror the module they test
   (e.g. `test_client.py` → `client.py`)
 - Use `pytest.mark.integration` for live-API tests
+- Run a single test: `uv run pytest tests/test_client.py::test_name -v`
 
 ## Build & Run Commands
 
@@ -85,4 +93,34 @@ make format           # ruff format + fix
 make typecheck        # mypy strict
 make test-integration # requires live NetBox
 make release VERSION=x.y.z  # bump, changelog, tag, push
+
+# Single test
+uv run pytest tests/test_client.py::test_name -v
 ```
+
+## Available Commands
+
+| Command | API Endpoint | Description |
+|---|---|---|
+| `prefixes` | `ipam/prefixes/` | IPAM prefixes |
+| `ip-addresses` | `ipam/ip-addresses/` | IPAM IP addresses |
+| `vlans` | `ipam/vlans/` | IPAM VLANs |
+| `vrfs` | `ipam/vrfs/` | IPAM VRFs |
+| `aggregates` | `ipam/aggregates/` | IPAM aggregates (top-level IP space by RIR) |
+| `sites` | `dcim/sites/` | DCIM sites |
+| `devices` | `dcim/devices/` | DCIM devices |
+| `tenants` | `tenancy/tenants/` | Tenancy tenants |
+| `rfc1918` | `ipam/prefixes/` (×3) | RFC 1918 Global VRF inventory with mapping status |
+| `batch-prefixes` | `ipam/prefixes/` | Batch prefix query from TOML |
+| `setup` | — | Interactive setup wizard |
+
+## Branch Naming
+
+| Prefix      | Purpose               |
+|-------------|-----------------------|
+| `feat/`     | New feature           |
+| `fix/`      | Bug fix               |
+| `docs/`     | Documentation only    |
+| `refactor/` | Code refactoring      |
+| `test/`     | Adding/updating tests |
+| `chore/`    | Maintenance / tooling |

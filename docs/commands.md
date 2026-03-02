@@ -178,3 +178,144 @@ prefixes = [
 | `--format` / `-f` | choice | `table` or `json` |
 | `--status-only` | flag | Compact prefix + status summary |
 | `--verbose` / `-v` | flag | Debug logging |
+
+---
+
+## `nbpull aggregates`
+
+List IPAM aggregates (top-level IP space allocations from a RIR or organisation).
+
+```bash
+nbpull aggregates
+nbpull aggregates --rir ARIN
+nbpull aggregates --tenant Ops --format json
+```
+
+### Options
+
+| Flag | Type | Description |
+|---|---|---|
+| `--rir` | text | Filter by RIR name (e.g. ARIN, RIPE, RFC1918) |
+| `--tenant` | text | Filter by tenant name |
+| `--tag` | text | Filter by tag slug |
+| `--search` / `-s` | text | Free-text search |
+| `--limit` / `-l` | int | Max results (default: 50) |
+| `--format` / `-f` | choice | `table` or `json` |
+| `--verbose` / `-v` | flag | Debug logging |
+
+---
+
+## `nbpull sites`
+
+List DCIM sites (physical or logical locations).
+
+```bash
+nbpull sites
+nbpull sites --status active --region "US East"
+nbpull sites --tenant Ops --format json
+```
+
+### Options
+
+| Flag | Type | Description |
+|---|---|---|
+| `--status` | text | Filter by status (active, planned, retired, etc.) |
+| `--tenant` | text | Filter by tenant name |
+| `--region` | text | Filter by region name |
+| `--tag` | text | Filter by tag slug |
+| `--search` / `-s` | text | Free-text search |
+| `--limit` / `-l` | int | Max results (default: 50) |
+| `--format` / `-f` | choice | `table` or `json` |
+| `--verbose` / `-v` | flag | Debug logging |
+
+---
+
+## `nbpull devices`
+
+List DCIM devices (physical network hardware).
+
+```bash
+nbpull devices
+nbpull devices --site DC1 --status active
+nbpull devices --role "Core Router" --format json
+```
+
+### Options
+
+| Flag | Type | Description |
+|---|---|---|
+| `--status` | text | Filter by status (active, planned, staged, failed, decommissioning, inventory, offline) |
+| `--site` | text | Filter by site name |
+| `--tenant` | text | Filter by tenant name |
+| `--role` | text | Filter by device role name |
+| `--tag` | text | Filter by tag slug |
+| `--search` / `-s` | text | Free-text search |
+| `--limit` / `-l` | int | Max results (default: 50) |
+| `--format` / `-f` | choice | `table` or `json` |
+| `--verbose` / `-v` | flag | Debug logging |
+
+> **Note:** The table view shows ID, Name, Status, Site, Role, Device Type, Tenant, and Tags.
+> Use `--format json` to access Platform, Primary IP, Serial, and all other fields.
+
+---
+
+## `nbpull tenants`
+
+List tenancy tenants (organisations or customers that own resources).
+
+```bash
+nbpull tenants
+nbpull tenants --group Internal
+nbpull tenants --search ops --format json
+```
+
+### Options
+
+| Flag | Type | Description |
+|---|---|---|
+| `--group` | text | Filter by tenant group name |
+| `--tag` | text | Filter by tag slug |
+| `--search` / `-s` | text | Free-text search |
+| `--limit` / `-l` | int | Max results (default: 50) |
+| `--format` / `-f` | choice | `table` or `json` |
+| `--verbose` / `-v` | flag | Debug logging |
+
+---
+
+## `nbpull rfc1918`
+
+Inventory all RFC 1918 prefixes in the **Global VRF** (no VRF assignment) and
+label each with a **mapping status**:
+
+| Status | Meaning |
+|---|---|
+| `mapped` | Has **both** a site and a tenant — fully documented |
+| `unmapped` | Has **neither** site nor tenant — floating |
+| `ambiguous` | Has one but not the other — partially documented |
+
+Queries all three RFC 1918 supernets (`10.0.0.0/8`, `172.16.0.0/12`,
+`192.168.0.0/16`) in a single command, deduplicating overlapping results.
+
+```bash
+# Full inventory table
+nbpull rfc1918
+
+# Show only unmapped prefixes
+nbpull rfc1918 --mapping-status unmapped
+
+# Show only ambiguous prefixes as JSON for scripting
+nbpull rfc1918 --mapping-status ambiguous --format json
+```
+
+### Options
+
+| Flag | Type | Description |
+|---|---|---|
+| `--mapping-status` | text | Filter by `mapped`, `unmapped`, or `ambiguous` |
+| `--limit` / `-l` | int | Max results per RFC 1918 block (default: 500) |
+| `--format` / `-f` | choice | `table` or `json` |
+| `--verbose` / `-v` | flag | Debug logging |
+
+> **Note:** NetBox does not expose a portable "null VRF" query parameter across
+> all versions, so the command fetches all prefixes within each RFC 1918 block
+> and filters to the Global VRF (no VRF assignment) in Python.

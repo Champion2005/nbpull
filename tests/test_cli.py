@@ -454,6 +454,450 @@ class TestVRFsCommand:
 
 
 # ------------------------------------------------------------------
+# aggregates command
+# ------------------------------------------------------------------
+
+MOCK_AGGREGATE_RESPONSE = [
+    {
+        "id": 1,
+        "display": "10.0.0.0/8",
+        "prefix": "10.0.0.0/8",
+        "rir": {"id": 1, "display": "RFC 1918"},
+        "tenant": None,
+        "date_added": "2024-01-01",
+        "description": "Private space",
+        "tags": [],
+    },
+]
+
+
+class TestAggregatesCommand:
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_aggregates_table(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_AGGREGATE_RESPONSE
+        result = runner.invoke(app, ["aggregates"])
+        assert result.exit_code == 0
+        assert "10.0.0.0" in result.output
+        assert "Aggregates" in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_aggregates_json(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_AGGREGATE_RESPONSE
+        result = runner.invoke(app, ["aggregates", "--format", "json"])
+        assert result.exit_code == 0
+        assert '"prefix"' in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_aggregates_passes_filters(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        runner.invoke(
+            app,
+            [
+                "aggregates",
+                "--rir",
+                "ARIN",
+                "--tenant",
+                "Ops",
+                "--tag",
+                "core",
+            ],
+        )
+        call_args = mock_fetch.call_args
+        params = call_args[0][1]
+        assert params["rir"] == "ARIN"
+        assert params["tenant"] == "Ops"
+        assert params["tag"] == "core"
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_aggregates_uses_correct_endpoint(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        runner.invoke(app, ["aggregates"])
+        endpoint = mock_fetch.call_args[0][0]
+        assert endpoint == "ipam/aggregates/"
+
+
+# ------------------------------------------------------------------
+# sites command
+# ------------------------------------------------------------------
+
+MOCK_SITE_RESPONSE = [
+    {
+        "id": 1,
+        "display": "DC1",
+        "name": "DC1",
+        "slug": "dc1",
+        "status": {"value": "active", "label": "Active"},
+        "region": {"id": 1, "display": "US East"},
+        "tenant": None,
+        "facility": "NY5",
+        "time_zone": "America/New_York",
+        "description": "Primary DC",
+        "tags": [],
+    },
+]
+
+
+class TestSitesCommand:
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_sites_table(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_SITE_RESPONSE
+        result = runner.invoke(app, ["sites"])
+        assert result.exit_code == 0
+        assert "DC1" in result.output
+        assert "Sites" in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_sites_json(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_SITE_RESPONSE
+        result = runner.invoke(app, ["sites", "--format", "json"])
+        assert result.exit_code == 0
+        assert '"slug"' in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_sites_passes_filters(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        runner.invoke(
+            app,
+            [
+                "sites",
+                "--status",
+                "active",
+                "--tenant",
+                "Ops",
+                "--region",
+                "US East",
+                "--tag",
+                "prod",
+            ],
+        )
+        call_args = mock_fetch.call_args
+        params = call_args[0][1]
+        assert params["status"] == "active"
+        assert params["tenant"] == "Ops"
+        assert params["region"] == "US East"
+        assert params["tag"] == "prod"
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_sites_uses_correct_endpoint(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        runner.invoke(app, ["sites"])
+        endpoint = mock_fetch.call_args[0][0]
+        assert endpoint == "dcim/sites/"
+
+
+# ------------------------------------------------------------------
+# devices command
+# ------------------------------------------------------------------
+
+MOCK_DEVICE_RESPONSE = [
+    {
+        "id": 1,
+        "display": "router01",
+        "name": "router01",
+        "device_type": {"id": 1, "display": "Cisco ASR-9001"},
+        "role": {"id": 1, "display": "Core Router"},
+        "site": {"id": 1, "display": "DC1"},
+        "rack": None,
+        "status": {"value": "active", "label": "Active"},
+        "tenant": None,
+        "platform": {"id": 1, "display": "IOS XR"},
+        "primary_ip": {"id": 5, "display": "10.0.0.1/32"},
+        "serial": "FOC12345",
+        "description": "Core router",
+        "tags": [],
+    },
+]
+
+
+class TestDevicesCommand:
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_devices_table(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_DEVICE_RESPONSE
+        result = runner.invoke(app, ["devices"])
+        assert result.exit_code == 0
+        assert "router" in result.output
+        assert "Devices" in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_devices_json(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_DEVICE_RESPONSE
+        result = runner.invoke(app, ["devices", "--format", "json"])
+        assert result.exit_code == 0
+        assert '"name"' in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_devices_passes_filters(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        runner.invoke(
+            app,
+            [
+                "devices",
+                "--status",
+                "active",
+                "--site",
+                "DC1",
+                "--tenant",
+                "Ops",
+                "--role",
+                "Core Router",
+                "--tag",
+                "critical",
+            ],
+        )
+        call_args = mock_fetch.call_args
+        params = call_args[0][1]
+        assert params["status"] == "active"
+        assert params["site"] == "DC1"
+        assert params["tenant"] == "Ops"
+        assert params["role"] == "Core Router"
+        assert params["tag"] == "critical"
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_devices_uses_correct_endpoint(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        runner.invoke(app, ["devices"])
+        endpoint = mock_fetch.call_args[0][0]
+        assert endpoint == "dcim/devices/"
+
+
+# ------------------------------------------------------------------
+# tenants command
+# ------------------------------------------------------------------
+
+MOCK_TENANT_RESPONSE = [
+    {
+        "id": 1,
+        "display": "Ops",
+        "name": "Ops",
+        "slug": "ops",
+        "group": {"id": 1, "display": "Internal"},
+        "description": "Operations team",
+        "tags": [],
+    },
+]
+
+
+class TestTenantsCommand:
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_tenants_table(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_TENANT_RESPONSE
+        result = runner.invoke(app, ["tenants"])
+        assert result.exit_code == 0
+        assert "Ops" in result.output
+        assert "Tenants" in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_tenants_json(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_TENANT_RESPONSE
+        result = runner.invoke(app, ["tenants", "--format", "json"])
+        assert result.exit_code == 0
+        assert '"slug"' in result.output
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_tenants_passes_filters(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        runner.invoke(
+            app,
+            ["tenants", "--group", "Internal", "--tag", "core", "--search", "ops"],
+        )
+        call_args = mock_fetch.call_args
+        params = call_args[0][1]
+        assert params["group"] == "Internal"
+        assert params["tag"] == "core"
+        assert params["q"] == "ops"
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_tenants_uses_correct_endpoint(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        runner.invoke(app, ["tenants"])
+        endpoint = mock_fetch.call_args[0][0]
+        assert endpoint == "tenancy/tenants/"
+
+
+# ------------------------------------------------------------------
+# RFC 1918 Inventory
+# ------------------------------------------------------------------
+
+MOCK_RFC1918_RESPONSE = [
+    {
+        "id": 1,
+        "display": "10.0.0.0/24",
+        "prefix": "10.0.0.0/24",
+        "status": {"value": "active", "label": "Active"},
+        "vrf": None,
+        "tenant": {"id": 1, "display": "Ops"},
+        "site": {"id": 1, "display": "NYC"},
+        "vlan": None,
+        "role": None,
+        "is_pool": False,
+        "mark_utilized": False,
+        "description": "",
+        "tags": [],
+    },
+    {
+        "id": 2,
+        "display": "192.168.0.0/24",
+        "prefix": "192.168.0.0/24",
+        "status": {"value": "reserved", "label": "Reserved"},
+        "vrf": None,
+        "tenant": None,
+        "site": None,
+        "vlan": None,
+        "role": None,
+        "is_pool": False,
+        "mark_utilized": False,
+        "description": "",
+        "tags": [],
+    },
+]
+
+
+class TestRfc1918Command:
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_table(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_RFC1918_RESPONSE
+        result = runner.invoke(app, ["rfc1918"])
+        assert result.exit_code == 0
+        assert "10.0.0" in result.output
+        assert "mapped" in result.output
+
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_json(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_RFC1918_RESPONSE
+        result = runner.invoke(app, ["rfc1918", "--format", "json"])
+        assert result.exit_code == 0
+        assert '"prefix"' in result.output
+
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_filter_mapped(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_RFC1918_RESPONSE
+        result = runner.invoke(app, ["rfc1918", "--mapping-status", "mapped"])
+        assert result.exit_code == 0
+        assert "10.0.0" in result.output
+        # unmapped prefix filtered out
+        assert "192.168" not in result.output
+
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_filter_unmapped(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = MOCK_RFC1918_RESPONSE
+        result = runner.invoke(app, ["rfc1918", "--mapping-status", "unmapped"])
+        assert result.exit_code == 0
+        assert "192.168" in result.output
+        assert "10.0.0" not in result.output
+
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_empty(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        mock_fetch.return_value = []
+        result = runner.invoke(app, ["rfc1918"])
+        assert result.exit_code == 0
+
+
+# ------------------------------------------------------------------
 # Config exit code
 # ------------------------------------------------------------------
 

@@ -26,8 +26,11 @@ Apply to: `src/netbox_data_puller/cli.py`
 2. Reuse existing filter options (copy from `prefixes` command)
 3. Add a formatter function in `formatters.py`
 4. Add a Pydantic model in `models/` if it's a new resource type
-5. Update `docs/commands.md` with the new command reference
-6. Add unit tests in `tests/test_cli.py`
+5. Export the new model from `models/__init__.py`
+6. Update `docs/commands.md` with the new command reference
+7. Update `CHANGELOG.md` under `[Unreleased]`
+8. Add unit tests in `tests/test_cli.py`, `tests/test_models.py`, `tests/test_formatters.py`
+9. Update the `setup` completion panel in `cli.py` to list the new command
 
 ## Do NOT
 
