@@ -5,7 +5,9 @@ All commands are **read-only** — nbpull never writes data to NetBox.
 ## Global Behavior
 
 - Output defaults to **Rich tables** on stdout
-- Pass `--format json` for machine-readable JSON output
+- Pass `--format json` to write output to a JSON file; the CLI prompts for a
+  filename with a default of `<command>_YYYY-MM-DD.json`. Use `--output`/`-o`
+  to specify the path directly (skips the prompt, useful for scripting)
 - Pass `--verbose` / `-v` to enable debug logging (on stderr)
 - All commands support filtering via common flags
 
@@ -28,7 +30,9 @@ nbpull setup --verbose
    endpoints (`prefixes`, `ip-addresses`, `vlans`, `vrfs`) to verify
    connectivity and permissions
 3. **Optionally creates `batch_prefixes.toml`** — walks you through
-   entering CIDR prefixes and optional global filters
+   entering CIDR prefixes (choose from three input modes: comma-separated
+   inline, load from a file, or enter one per line) and optional global
+   filters
 
 ### Existing Configuration
 
@@ -67,6 +71,7 @@ nbpull prefixes --status-only          # compact prefix + status view
 | `--search` / `-s` | text | Free-text search |
 | `--limit` / `-l` | int | Max results (default: 50) |
 | `--format` / `-f` | choice | `table` or `json` |
+| `--output` / `-o` | path | File to write JSON output (prompts if omitted with `--format json`) |
 | `--status-only` | flag | Show only prefix and status columns |
 | `--verbose` / `-v` | flag | Debug logging |
 
@@ -94,6 +99,7 @@ nbpull ip-addresses --status active --vrf Production
 | `--prefix` | text | Filter by parent prefix (e.g. 10.0.0.0/24) |
 | `--limit` / `-l` | int | Max results (default: 50) |
 | `--format` / `-f` | choice | `table` or `json` |
+| `--output` / `-o` | path | File to write JSON output (prompts if omitted with `--format json`) |
 | `--verbose` / `-v` | flag | Debug logging |
 
 ---
@@ -118,6 +124,7 @@ nbpull vlans --site DC1 --tenant Ops
 | `--search` / `-s` | text | Free-text search |
 | `--limit` / `-l` | int | Max results (default: 50) |
 | `--format` / `-f` | choice | `table` or `json` |
+| `--output` / `-o` | path | File to write JSON output (prompts if omitted with `--format json`) |
 | `--verbose` / `-v` | flag | Debug logging |
 
 ---
@@ -140,6 +147,7 @@ nbpull vrfs --tenant Ops --format json
 | `--search` / `-s` | text | Free-text search |
 | `--limit` / `-l` | int | Max results (default: 50) |
 | `--format` / `-f` | choice | `table` or `json` |
+| `--output` / `-o` | path | File to write JSON output (prompts if omitted with `--format json`) |
 | `--verbose` / `-v` | flag | Debug logging |
 
 ---
@@ -176,6 +184,7 @@ prefixes = [
 |---|---|---|
 | `--file` | path | Path to TOML file (default: `batch_prefixes.toml`) |
 | `--format` / `-f` | choice | `table` or `json` |
+| `--output` / `-o` | path | File to write JSON output (prompts if omitted with `--format json`) |
 | `--status-only` | flag | Compact prefix + status summary |
 | `--verbose` / `-v` | flag | Debug logging |
 
@@ -201,6 +210,7 @@ nbpull aggregates --tenant Ops --format json
 | `--search` / `-s` | text | Free-text search |
 | `--limit` / `-l` | int | Max results (default: 50) |
 | `--format` / `-f` | choice | `table` or `json` |
+| `--output` / `-o` | path | File to write JSON output (prompts if omitted with `--format json`) |
 | `--verbose` / `-v` | flag | Debug logging |
 
 ---
@@ -226,6 +236,7 @@ nbpull sites --tenant Ops --format json
 | `--search` / `-s` | text | Free-text search |
 | `--limit` / `-l` | int | Max results (default: 50) |
 | `--format` / `-f` | choice | `table` or `json` |
+| `--output` / `-o` | path | File to write JSON output (prompts if omitted with `--format json`) |
 | `--verbose` / `-v` | flag | Debug logging |
 
 ---
@@ -252,6 +263,7 @@ nbpull devices --role "Core Router" --format json
 | `--search` / `-s` | text | Free-text search |
 | `--limit` / `-l` | int | Max results (default: 50) |
 | `--format` / `-f` | choice | `table` or `json` |
+| `--output` / `-o` | path | File to write JSON output (prompts if omitted with `--format json`) |
 | `--verbose` / `-v` | flag | Debug logging |
 
 > **Note:** The table view shows ID, Name, Status, Site, Role, Device Type, Tenant, and Tags.
@@ -278,6 +290,7 @@ nbpull tenants --search ops --format json
 | `--search` / `-s` | text | Free-text search |
 | `--limit` / `-l` | int | Max results (default: 50) |
 | `--format` / `-f` | choice | `table` or `json` |
+| `--output` / `-o` | path | File to write JSON output (prompts if omitted with `--format json`) |
 | `--verbose` / `-v` | flag | Debug logging |
 
 ---
@@ -314,6 +327,7 @@ nbpull rfc1918 --mapping-status ambiguous --format json
 | `--mapping-status` | text | Filter by `mapped`, `unmapped`, or `ambiguous` |
 | `--limit` / `-l` | int | Max results per RFC 1918 block (default: 500) |
 | `--format` / `-f` | choice | `table` or `json` |
+| `--output` / `-o` | path | File to write JSON output (prompts if omitted with `--format json`) |
 | `--verbose` / `-v` | flag | Debug logging |
 
 > **Note:** NetBox does not expose a portable "null VRF" query parameter across

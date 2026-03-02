@@ -9,6 +9,21 @@ project adheres to
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-03-02
+
+### Added
+
+- 📄 `--output`/`-o` flag on all data commands (`prefixes`,
+  `ip-addresses`, `vlans`, `vrfs`, `aggregates`, `sites`, `devices`,
+  `tenants`, `rfc1918`, `batch-prefixes`) — when `--format json` is
+  used, output is written to a file instead of the terminal. If
+  `--output` is not provided, the CLI prompts for a filename with a
+  sensible default (`<command>_YYYY-MM-DD.json`).
+- 🗂️ `setup` batch prefix entry now supports three input modes:
+  **1** — paste a comma-separated list inline;
+  **2** — load from an existing file containing comma-separated CIDRs;
+  **3** — enter prefixes one per line interactively (original behaviour).
+
 ## [0.2.0] — 2026-03-02
 
 ### Added
@@ -115,7 +130,8 @@ project adheres to
 - 🔒 Read-only safety guarantee — only GET requests, ever
 - ⚙️ Configuration via `.env` / environment variables (pydantic-settings)
 
-[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/Champion2005/nbpull/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Champion2005/nbpull/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/Champion2005/nbpull/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Champion2005/nbpull/compare/v0.1.1...v0.1.2

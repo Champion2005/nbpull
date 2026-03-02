@@ -21,8 +21,13 @@
 - 🖥️ **IP Addresses** — query IP address allocations
 - 🏷️ **VLANs** — browse VLAN assignments
 - 🔀 **VRFs** — inspect VRF instances
+- 📊 **Aggregates** — list top-level IP space by RIR
+- 🏢 **Sites** — browse DCIM sites
+- 🖧 **Devices** — query DCIM devices
+- 🏛️ **Tenants** — list tenancy tenants
+- 🌐 **RFC 1918** — inventory Global VRF RFC 1918 prefixes with mapping status
 - 📦 **Batch queries** — check many prefixes at once from a TOML file
-- 🎨 Rich table output (default) or JSON (`--format json`)
+- 🎨 Rich table output (default) or JSON saved to a file (`--format json`)
 - 🔎 Filter by status, VRF, tenant, site, tag, or free-text search
 - ⚡ Async HTTP with automatic pagination
 - 🔒 Strict typing (mypy strict mode + Pydantic v2)
@@ -72,6 +77,11 @@ nbpull prefixes --status active --vrf Production
 nbpull ip-addresses --prefix 10.0.0.0/24
 nbpull vlans --site DC1
 nbpull vrfs --tenant Ops
+nbpull aggregates --rir ARIN
+nbpull sites --status active
+nbpull devices --role "Core Router"
+nbpull tenants
+nbpull rfc1918
 nbpull batch-prefixes --file my_prefixes.toml --status-only
 ```
 
@@ -84,6 +94,11 @@ nbpull batch-prefixes --file my_prefixes.toml --status-only
 | `nbpull ip-addresses` | List IP addresses |
 | `nbpull vlans` | List VLANs |
 | `nbpull vrfs` | List VRFs |
+| `nbpull aggregates` | List IPAM aggregates (top-level space by RIR) |
+| `nbpull sites` | List DCIM sites |
+| `nbpull devices` | List DCIM devices |
+| `nbpull tenants` | List tenancy tenants |
+| `nbpull rfc1918` | Inventory Global VRF RFC 1918 prefixes with mapping status |
 | `nbpull batch-prefixes` | Query multiple prefixes from a TOML file |
 
 ### Common Flags
@@ -97,7 +112,8 @@ nbpull batch-prefixes --file my_prefixes.toml --status-only
 | `--tag` | Filter by tag slug |
 | `--search` / `-s` | Free-text search |
 | `--limit` / `-l` | Max results (default: 50) |
-| `--format` / `-f` | Output format: `table` (default) or `json` |
+| `--format` / `-f` | Output format: `table` (default) or `json` (writes to file) |
+| `--output` / `-o` | JSON output file path (prompts with default if omitted) |
 | `--verbose` / `-v` | Enable debug logging |
 
 See the full [command reference](docs/commands.md) for all options.
@@ -141,13 +157,19 @@ nbpull batch-prefixes --file prefixes.toml --status-only
 
 ```
 src/netbox_data_puller/
-├── cli.py          # Typer commands + filtering
+├── cli.py          # Typer commands + filtering + JSON file output
 ├── client.py       # Async GET-only NetBox API client
 ├── config.py       # Pydantic Settings (.env)
 ├── formatters.py   # Rich table renderers
 └── models/         # Pydantic models per resource
-    ├── prefix.py
+    ├── __init__.py
+    ├── common.py   # Shared field types / base classes
+    ├── aggregate.py
+    ├── device.py
     ├── ip_address.py
+    ├── prefix.py
+    ├── site.py
+    ├── tenant.py
     ├── vlan.py
     └── vrf.py
 ```

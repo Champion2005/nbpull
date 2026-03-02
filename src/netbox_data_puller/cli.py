@@ -4,6 +4,8 @@ All commands are READ-ONLY — no data is ever written to NetBox.
 """
 
 import asyncio
+import datetime
+import json
 import logging
 import re
 import sys
@@ -33,7 +35,6 @@ from netbox_data_puller.formatters import (
     print_batch_summary,
     print_devices,
     print_ip_addresses,
-    print_json,
     print_prefixes,
     print_prefixes_status,
     print_rfc1918_inventory,
@@ -133,6 +134,17 @@ MappingStatusOpt = Annotated[
         help="Filter by mapping status (mapped/unmapped/ambiguous).",
     ),
 ]
+OutputOpt = Annotated[
+    Path | None,
+    typer.Option(
+        "--output",
+        "-o",
+        help=(
+            "Write JSON output to this file. "
+            "If omitted, you will be prompted for a filename."
+        ),
+    ),
+]
 
 
 # ------------------------------------------------------------------
@@ -143,6 +155,33 @@ MappingStatusOpt = Annotated[
 def _build_params(**kwargs: Any) -> dict[str, Any]:
     """Build API query params, dropping None values."""
     return {k: v for k, v in kwargs.items() if v is not None}
+
+
+def _save_json(records: list[Any], output: Path | None, command_name: str) -> None:
+    """Serialise records to JSON and write to a file.
+
+    If *output* is ``None``, the user is prompted for a filename with a
+    sensible default (``<command>_YYYY-MM-DD.json``).  The written path
+    is echoed to stderr on success.
+    """
+    if output is None:
+        today = datetime.date.today().isoformat()
+        default_name = f"{command_name}_{today}.json"
+        raw = Prompt.ask(
+            "[cyan]Output file[/cyan]",
+            console=console,
+            default=default_name,
+        )
+        output = Path(raw.strip())
+
+    data = [
+        r.model_dump(mode="json") if hasattr(r, "model_dump") else r for r in records
+    ]
+    output.write_text(json.dumps(data, indent=2, default=str))
+    console.print(
+        f"[bold green]✅ {len(records)} record(s) saved to "
+        f"[cyan]{output}[/cyan][/bold green]"
+    )
 
 
 def _get_settings() -> NetBoxSettings:
@@ -483,31 +522,99 @@ def setup(
     ):
         console.print()
         console.print(
-            "[dim]Enter prefixes one per line (CIDR notation, "
-            "e.g. 10.0.0.0/8).\n"
-            "Press Enter on an empty line when done.[/dim]",
+            "[dim]How would you like to enter your prefixes?[/dim]\n"
+            "  [cyan]1[/cyan] — Type or paste a comma-separated list\n"
+            "  [cyan]2[/cyan] — Load from an existing file (comma-separated CIDRs)\n"
+            "  [cyan]3[/cyan] — Enter one per line interactively",
         )
         console.print()
+        input_mode = Prompt.ask(
+            "[cyan]Choice[/cyan]",
+            console=console,
+            choices=["1", "2", "3"],
+            default="1",
+        )
 
-        prefix_list: list[str] = []
         cidr_re = re.compile(
             r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$",
         )
-        while True:
-            value = Prompt.ask(
-                f"[cyan]Prefix {len(prefix_list) + 1}[/cyan]",
-                console=console,
-                default="",
+
+        def _validate_and_warn(prefixes: list[str]) -> list[str]:
+            """Warn on non-CIDR entries but keep them."""
+            result: list[str] = []
+            for p in prefixes:
+                p = p.strip()
+                if not p:
+                    continue
+                if not cidr_re.match(p):
+                    console.print(
+                        f"[yellow]⚠️  '{p}' doesn't look like a valid "
+                        "CIDR — added anyway.[/yellow]",
+                    )
+                result.append(p)
+            return result
+
+        prefix_list: list[str] = []
+
+        if input_mode == "1":
+            # Comma-separated inline input
+            console.print(
+                "[dim]Enter prefixes separated by commas "
+                "(e.g. 10.0.0.0/8, 172.16.0.0/12).[/dim]",
             )
-            value = value.strip()
-            if not value:
-                break
-            if not cidr_re.match(value):
+            console.print()
+            raw_input = Prompt.ask(
+                "[cyan]Prefixes[/cyan]",
+                console=console,
+            )
+            prefix_list = _validate_and_warn(raw_input.split(","))
+
+        elif input_mode == "2":
+            # Load from file
+            console.print(
+                "[dim]Enter the path to a text file containing "
+                "comma-separated CIDRs.[/dim]",
+            )
+            console.print()
+            file_path_str = Prompt.ask(
+                "[cyan]File path[/cyan]",
+                console=console,
+            )
+            file_path = Path(file_path_str.strip())
+            if not file_path.exists():
                 console.print(
-                    f"[yellow]⚠️  '{value}' doesn't look like a valid "
-                    "CIDR — added anyway.[/yellow]",
+                    f"[bold red]❌ File not found:[/bold red] {file_path}",
                 )
-            prefix_list.append(value)
+            else:
+                file_contents = file_path.read_text()
+                # Support comma-separated on one or multiple lines
+                raw_prefixes = [
+                    p for line in file_contents.splitlines() for p in line.split(",")
+                ]
+                prefix_list = _validate_and_warn(raw_prefixes)
+                console.print(
+                    f"[dim]Loaded {len(prefix_list)} prefix(es) from "
+                    f"[cyan]{file_path}[/cyan].[/dim]",
+                )
+
+        else:
+            # One per line (original behaviour)
+            console.print(
+                "[dim]Enter prefixes one per line (CIDR notation, "
+                "e.g. 10.0.0.0/8).\n"
+                "Press Enter on an empty line when done.[/dim]",
+            )
+            console.print()
+            while True:
+                value = Prompt.ask(
+                    f"[cyan]Prefix {len(prefix_list) + 1}[/cyan]",
+                    console=console,
+                    default="",
+                )
+                value = value.strip()
+                if not value:
+                    break
+                prefix_list.extend(_validate_and_warn([value]))
 
         if not prefix_list:
             console.print("[dim]No prefixes entered — skipping.[/dim]")
@@ -595,6 +702,7 @@ def prefixes(
     search: SearchOpt = None,
     limit: LimitOpt = 50,
     fmt: FormatOpt = OutputFormat.table,
+    output: OutputOpt = None,
     status_only: StatusOnlyOpt = False,
     verbose: VerboseOpt = False,
 ) -> None:
@@ -617,7 +725,7 @@ def prefixes(
     records = [Prefix.model_validate(r) for r in raw]
 
     if fmt == OutputFormat.json:
-        print_json(records)
+        _save_json(records, output, "prefixes")
     elif status_only:
         print_prefixes_status(records)
     else:
@@ -641,6 +749,7 @@ def ip_addresses(
     ] = None,
     limit: LimitOpt = 50,
     fmt: FormatOpt = OutputFormat.table,
+    output: OutputOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
     """🖥️ List IPAM IP addresses from NetBox."""
@@ -663,7 +772,7 @@ def ip_addresses(
     records = [IPAddress.model_validate(r) for r in raw]
 
     if fmt == OutputFormat.json:
-        print_json(records)
+        _save_json(records, output, "ip-addresses")
     else:
         print_ip_addresses(records)
 
@@ -677,6 +786,7 @@ def vlans(
     search: SearchOpt = None,
     limit: LimitOpt = 50,
     fmt: FormatOpt = OutputFormat.table,
+    output: OutputOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
     """🏷️ List IPAM VLANs from NetBox."""
@@ -697,7 +807,7 @@ def vlans(
     records = [VLAN.model_validate(r) for r in raw]
 
     if fmt == OutputFormat.json:
-        print_json(records)
+        _save_json(records, output, "vlans")
     else:
         print_vlans(records)
 
@@ -709,6 +819,7 @@ def vrfs(
     search: SearchOpt = None,
     limit: LimitOpt = 50,
     fmt: FormatOpt = OutputFormat.table,
+    output: OutputOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
     """🔀 List IPAM VRFs from NetBox."""
@@ -727,7 +838,7 @@ def vrfs(
     records = [VRF.model_validate(r) for r in raw]
 
     if fmt == OutputFormat.json:
-        print_json(records)
+        _save_json(records, output, "vrfs")
     else:
         print_vrfs(records)
 
@@ -743,6 +854,7 @@ def aggregates(
     search: SearchOpt = None,
     limit: LimitOpt = 50,
     fmt: FormatOpt = OutputFormat.table,
+    output: OutputOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
     """📊 List IPAM aggregates (top-level IP space) from NetBox."""
@@ -762,7 +874,7 @@ def aggregates(
     records = [Aggregate.model_validate(r) for r in raw]
 
     if fmt == OutputFormat.json:
-        print_json(records)
+        _save_json(records, output, "aggregates")
     else:
         print_aggregates(records)
 
@@ -776,6 +888,7 @@ def sites(
     search: SearchOpt = None,
     limit: LimitOpt = 50,
     fmt: FormatOpt = OutputFormat.table,
+    output: OutputOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
     """🏢 List DCIM sites from NetBox."""
@@ -796,7 +909,7 @@ def sites(
     records = [Site.model_validate(r) for r in raw]
 
     if fmt == OutputFormat.json:
-        print_json(records)
+        _save_json(records, output, "sites")
     else:
         print_sites(records)
 
@@ -811,6 +924,7 @@ def devices(
     search: SearchOpt = None,
     limit: LimitOpt = 50,
     fmt: FormatOpt = OutputFormat.table,
+    output: OutputOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
     """🖧  List DCIM devices from NetBox."""
@@ -832,7 +946,7 @@ def devices(
     records = [Device.model_validate(r) for r in raw]
 
     if fmt == OutputFormat.json:
-        print_json(records)
+        _save_json(records, output, "devices")
     else:
         print_devices(records)
 
@@ -847,6 +961,7 @@ def tenants(
     search: SearchOpt = None,
     limit: LimitOpt = 50,
     fmt: FormatOpt = OutputFormat.table,
+    output: OutputOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
     """🏛️ List tenancy tenants from NetBox."""
@@ -865,7 +980,7 @@ def tenants(
     records = [Tenant.model_validate(r) for r in raw]
 
     if fmt == OutputFormat.json:
-        print_json(records)
+        _save_json(records, output, "tenants")
     else:
         print_tenants(records)
 
@@ -929,6 +1044,7 @@ def rfc1918(
     mapping_status: MappingStatusOpt = None,
     limit: LimitOpt = 500,
     fmt: FormatOpt = OutputFormat.table,
+    output: OutputOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
     """🏠 RFC 1918 Global VRF prefix inventory with mapping status.
@@ -961,7 +1077,7 @@ def rfc1918(
         records = [r for r in records if _rfc1918_mapping_status(r) == mapping_status]
 
     if fmt == OutputFormat.json:
-        print_json(records)
+        _save_json(records, output, "rfc1918")
     else:
         print_rfc1918_inventory(records)
 
@@ -1012,6 +1128,7 @@ def batch_prefixes(
     fmt: FormatOpt = OutputFormat.table,
     status_only: StatusOnlyOpt = False,
     verbose: VerboseOpt = False,
+    output: OutputOpt = None,
 ) -> None:
     """📦 Query NetBox for multiple prefixes defined in a TOML file.
 
@@ -1082,18 +1199,8 @@ def batch_prefixes(
 
     # Render results
     if fmt == OutputFormat.json:
-        for cidr, records in batch_results:
-            console.print(
-                f"\n[bold cyan]── {cidr} ──[/bold cyan]",
-                highlight=False,
-            )
-            print_json(records)
-        for cidr in not_found:
-            console.print(
-                f"\n[bold cyan]── {cidr} ──[/bold cyan]",
-                highlight=False,
-            )
-            console.print("[yellow]  ⚠️  No results found.[/yellow]")
+        all_records = [r for _, records in batch_results for r in records]
+        _save_json(all_records, output, "batch-prefixes")
     elif status_only:
         print_batch_summary(batch_results, not_found)
     else:

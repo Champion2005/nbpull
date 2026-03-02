@@ -51,11 +51,16 @@ class TestPrefixesCommand:
         self,
         mock_settings: AsyncMock,
         mock_fetch: AsyncMock,
+        tmp_path: Path,
     ) -> None:
         mock_fetch.return_value = MOCK_PREFIX_RESPONSE
-        result = runner.invoke(app, ["prefixes", "--format", "json"])
+        out = tmp_path / "out.json"
+        result = runner.invoke(
+            app, ["prefixes", "--format", "json", "--output", str(out)]
+        )
         assert result.exit_code == 0
-        assert '"prefix"' in result.output
+        assert out.exists()
+        assert '"prefix"' in out.read_text()
 
     @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._get_settings")
@@ -129,13 +134,23 @@ class TestBatchPrefixes:
     ) -> None:
         toml_file = tmp_path / "test_batch.toml"
         toml_file.write_text('prefixes = ["10.0.0.0/8"]\n')
+        out = tmp_path / "out.json"
         mock_fetch.return_value = MOCK_PREFIX_RESPONSE
         result = runner.invoke(
             app,
-            ["batch-prefixes", "--file", str(toml_file), "-f", "json"],
+            [
+                "batch-prefixes",
+                "--file",
+                str(toml_file),
+                "-f",
+                "json",
+                "--output",
+                str(out),
+            ],
         )
         assert result.exit_code == 0
-        assert '"prefix"' in result.output
+        assert out.exists()
+        assert '"prefix"' in out.read_text()
 
     @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._get_settings")
@@ -316,11 +331,16 @@ class TestIPAddressesCommand:
         self,
         mock_settings: AsyncMock,
         mock_fetch: AsyncMock,
+        tmp_path: Path,
     ) -> None:
         mock_fetch.return_value = MOCK_IP_RESPONSE
-        result = runner.invoke(app, ["ip-addresses", "--format", "json"])
+        out = tmp_path / "out.json"
+        result = runner.invoke(
+            app, ["ip-addresses", "--format", "json", "--output", str(out)]
+        )
         assert result.exit_code == 0
-        assert '"address"' in result.output
+        assert out.exists()
+        assert '"address"' in out.read_text()
 
     @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._get_settings")
@@ -378,11 +398,14 @@ class TestVLANsCommand:
         self,
         mock_settings: AsyncMock,
         mock_fetch: AsyncMock,
+        tmp_path: Path,
     ) -> None:
         mock_fetch.return_value = MOCK_VLAN_RESPONSE
-        result = runner.invoke(app, ["vlans", "--format", "json"])
+        out = tmp_path / "out.json"
+        result = runner.invoke(app, ["vlans", "--format", "json", "--output", str(out)])
         assert result.exit_code == 0
-        assert '"vid"' in result.output
+        assert out.exists()
+        assert '"vid"' in out.read_text()
 
     @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._get_settings")
@@ -428,11 +451,14 @@ class TestVRFsCommand:
         self,
         mock_settings: AsyncMock,
         mock_fetch: AsyncMock,
+        tmp_path: Path,
     ) -> None:
         mock_fetch.return_value = MOCK_VRF_RESPONSE
-        result = runner.invoke(app, ["vrfs", "--format", "json"])
+        out = tmp_path / "out.json"
+        result = runner.invoke(app, ["vrfs", "--format", "json", "--output", str(out)])
         assert result.exit_code == 0
-        assert '"name"' in result.output
+        assert out.exists()
+        assert '"name"' in out.read_text()
 
     @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._get_settings")
@@ -491,11 +517,16 @@ class TestAggregatesCommand:
         self,
         mock_settings: AsyncMock,
         mock_fetch: AsyncMock,
+        tmp_path: Path,
     ) -> None:
         mock_fetch.return_value = MOCK_AGGREGATE_RESPONSE
-        result = runner.invoke(app, ["aggregates", "--format", "json"])
+        out = tmp_path / "out.json"
+        result = runner.invoke(
+            app, ["aggregates", "--format", "json", "--output", str(out)]
+        )
         assert result.exit_code == 0
-        assert '"prefix"' in result.output
+        assert out.exists()
+        assert '"prefix"' in out.read_text()
 
     @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._get_settings")
@@ -577,11 +608,14 @@ class TestSitesCommand:
         self,
         mock_settings: AsyncMock,
         mock_fetch: AsyncMock,
+        tmp_path: Path,
     ) -> None:
         mock_fetch.return_value = MOCK_SITE_RESPONSE
-        result = runner.invoke(app, ["sites", "--format", "json"])
+        out = tmp_path / "out.json"
+        result = runner.invoke(app, ["sites", "--format", "json", "--output", str(out)])
         assert result.exit_code == 0
-        assert '"slug"' in result.output
+        assert out.exists()
+        assert '"slug"' in out.read_text()
 
     @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._get_settings")
@@ -669,11 +703,16 @@ class TestDevicesCommand:
         self,
         mock_settings: AsyncMock,
         mock_fetch: AsyncMock,
+        tmp_path: Path,
     ) -> None:
         mock_fetch.return_value = MOCK_DEVICE_RESPONSE
-        result = runner.invoke(app, ["devices", "--format", "json"])
+        out = tmp_path / "out.json"
+        result = runner.invoke(
+            app, ["devices", "--format", "json", "--output", str(out)]
+        )
         assert result.exit_code == 0
-        assert '"name"' in result.output
+        assert out.exists()
+        assert '"name"' in out.read_text()
 
     @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._get_settings")
@@ -757,11 +796,16 @@ class TestTenantsCommand:
         self,
         mock_settings: AsyncMock,
         mock_fetch: AsyncMock,
+        tmp_path: Path,
     ) -> None:
         mock_fetch.return_value = MOCK_TENANT_RESPONSE
-        result = runner.invoke(app, ["tenants", "--format", "json"])
+        out = tmp_path / "out.json"
+        result = runner.invoke(
+            app, ["tenants", "--format", "json", "--output", str(out)]
+        )
         assert result.exit_code == 0
-        assert '"slug"' in result.output
+        assert out.exists()
+        assert '"slug"' in out.read_text()
 
     @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._get_settings")
@@ -852,11 +896,16 @@ class TestRfc1918Command:
         self,
         mock_settings: AsyncMock,
         mock_fetch: AsyncMock,
+        tmp_path: Path,
     ) -> None:
         mock_fetch.return_value = MOCK_RFC1918_RESPONSE
-        result = runner.invoke(app, ["rfc1918", "--format", "json"])
+        out = tmp_path / "out.json"
+        result = runner.invoke(
+            app, ["rfc1918", "--format", "json", "--output", str(out)]
+        )
         assert result.exit_code == 0
-        assert '"prefix"' in result.output
+        assert out.exists()
+        assert '"prefix"' in out.read_text()
 
     @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._get_settings")
@@ -1082,7 +1131,7 @@ class TestSetupCommand:
         """Setup creates batch_prefixes.toml when user provides prefixes."""
         monkeypatch.chdir(tmp_path)
         mock_probe.return_value = MOCK_PROBE_ALL_OK
-        # URL, token, 'y' to batch, two prefixes then empty, 'n' to filters
+        # URL, token, 'y' to batch, mode 3 (one per line), prefixes, 'n' to filters
         result = runner.invoke(
             app,
             ["setup"],
@@ -1090,6 +1139,7 @@ class TestSetupCommand:
                 "https://netbox.example.com\n"
                 "my-token\n"
                 "y\n"
+                "3\n"
                 "10.0.0.0/8\n"
                 "172.16.0.0/12\n"
                 "\n"
@@ -1120,6 +1170,7 @@ class TestSetupCommand:
                 "https://netbox.example.com\n"
                 "my-token\n"
                 "y\n"
+                "3\n"
                 "10.0.0.0/8\n"
                 "\n"
                 "y\n"

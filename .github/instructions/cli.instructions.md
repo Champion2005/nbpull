@@ -15,7 +15,10 @@ Apply to: `src/netbox_data_puller/cli.py`
 - Progress indicators use Rich spinners on **stderr** (never stdout)
 - Never use `print()` — use `rich.console.Console()` for output and
   `logging` for diagnostics
-- The `--format json` flag outputs raw JSON to stdout for piping
+- The `--format json` flag writes JSON to a file instead of stdout; if
+  `--output`/`-o` is not provided the CLI prompts for a filename with a
+  default of `<command>_YYYY-MM-DD.json`. Use `_save_json()` in `cli.py`
+  for all JSON file output — do not call `print_json()` from commands
 - Exit codes: 0 = success, 1 = error, 2 = config/auth failure
 - Keep the CLI thin — business logic belongs in `client.py` and
   `formatters.py`
@@ -23,7 +26,9 @@ Apply to: `src/netbox_data_puller/cli.py`
 ## Adding a New Command
 
 1. Add the Typer command function in `cli.py`
-2. Reuse existing filter options (copy from `prefixes` command)
+2. Reuse existing filter options (copy from `prefixes` command), including
+   `output: OutputOpt = None` for JSON file output
+3. Call `_save_json(records, output, "command-name")` in the json branch
 3. Add a formatter function in `formatters.py`
 4. Add a Pydantic model in `models/` if it's a new resource type
 5. Export the new model from `models/__init__.py`
