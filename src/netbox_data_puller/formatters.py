@@ -512,7 +512,9 @@ def _styled_mapping(status: str) -> Text:
     return Text(status, style=styles.get(status, ""))
 
 
-def print_rfc1918_inventory(records: list[Any]) -> None:
+def print_rfc1918_inventory(
+    records: list[Any], all_records: list[Any] | None = None
+) -> None:
     """Render RFC 1918 Global VRF prefix inventory as a Rich table."""
     table = Table(
         title="🏠 RFC 1918 Global VRF Prefix Inventory",
@@ -541,21 +543,27 @@ def print_rfc1918_inventory(records: list[Any]) -> None:
             r.description or "—",
         )
 
-    mapped = sum(1 for r in records if _mapping_status(r) == "mapped")
-    unmapped = sum(1 for r in records if _mapping_status(r) == "unmapped")
-    ambiguous = len(records) - mapped - unmapped
-    total = len(records)
+    stats_source = all_records if all_records is not None else records
+    mapped = sum(1 for r in stats_source if _mapping_status(r) == "mapped")
+    unmapped = sum(1 for r in stats_source if _mapping_status(r) == "unmapped")
+    ambiguous = len(stats_source) - mapped - unmapped
+    total = len(stats_source)
     coverage_pct = (mapped / total * 100) if total > 0 else 0.0
     target_met = coverage_pct >= 90.0
     coverage_style = "green" if target_met else "red"
     target_label = "✅ target met" if target_met else "❌ below 90% target"
 
     console.print(table)
+    displayed = len(records)
+    if displayed != total:
+        prefix_label = f"showing {displayed} of {total} prefixes"
+    else:
+        prefix_label = f"{total} prefixes"
     console.print(
-        f"[dim]  {total} prefixes — "
+        f"[dim]  {prefix_label} — "
         f"[green]{mapped} mapped[/green], "
         f"[red]{unmapped} unmapped[/red], "
         f"[yellow]{ambiguous} ambiguous[/yellow]  ·  "
-        f"[{coverage_style}]{coverage_pct:.1f}% coverage[/{coverage_style}] "
+        f"[{coverage_style}]Global Coverage: {coverage_pct:.1f}%[/{coverage_style}] "
         f"[dim]({target_label})[/dim][/dim]\n"
     )

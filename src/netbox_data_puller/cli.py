@@ -1205,6 +1205,7 @@ def rfc1918(
         raw = asyncio.run(_fetch_rfc1918_blocks(max_results=limit))
 
     records = [Prefix.model_validate(r) for r in raw]
+    all_records = list(records)
 
     if status:
         records = [r for r in records if r.status and r.status.value == status]
@@ -1225,7 +1226,7 @@ def rfc1918(
     elif fmt == OutputFormat.csv:
         _save_csv([_flatten_record(r) for r in records], output, "rfc1918")
     else:
-        print_rfc1918_inventory(records)
+        print_rfc1918_inventory(records, all_records=all_records)
 
 
 # ------------------------------------------------------------------
