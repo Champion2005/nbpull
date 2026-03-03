@@ -20,6 +20,6 @@ TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name')
 TOOL_INPUT=$(echo "$INPUT" | jq -c '.tool_input // {}' | tr -d '\n' | tr -d "\"'" | head -c 200)
 TOOL_RESPONSE=$(echo "$INPUT" | jq -r '.tool_response // ""' | tr -d '\n' | tr -d "\"'" | head -c 150)
 
-echo "[${TIMESTAMP}] ${TOOL_NAME} | in='${TOOL_INPUT}' | out='${TOOL_RESPONSE}' | session=${SESSION_ID}" >> "$LOG_FILE"
+echo "[${TIMESTAMP}] ${TOOL_NAME} | session=${SESSION_ID} | in='${TOOL_INPUT}' | out='${TOOL_RESPONSE}'" >> "$LOG_FILE"
 
 echo '{"continue": true}'

@@ -121,7 +121,11 @@ After all files are in place, make targeted adjustments based on user answers:
 
 **If Python venv = No** — Remove the venv check block from `session-start.sh` and `pre-tool-safety.sh` in the target.
 
-**If Azure = No** — Ensure no `az` auth checks remain in hook scripts.
+**If Azure = No** — Remove the `az` auth check from `session-start.sh` and the `az group/resource delete` block from `pre-tool-safety.sh`.
+
+**If Terraform = No** — Remove the Terraform version check from `session-start.sh` and the `terraform destroy` block from `pre-tool-safety.sh`.
+
+**If Node.js = No** — Remove the Node.js check from `session-start.sh`.
 
 **If safety hooks = No** — Remove `security.json` from `.github/hooks/` or comment out the deny/ask rules.
 
@@ -161,5 +165,6 @@ chore(workflow): migrate ns-template workflow
 - Never remove files without individual user confirmation per file
 - If a merge produces ambiguity, ask the user rather than guessing
 - Hook scripts in `.github/hooks/scripts/` go into the target's same path — make them executable (`chmod +x`)
+- Live session logs write to `.github/hooks/logs/` (session.log, tool-audit.log, subagent.log). After session end they are archived to `.github/hooks/logs/archive/<date>_<sessionId>/`. Do not confuse with the old `hooks/*.log` location.
 - The `plans/` directory is not created — it's generated at runtime. Do not create it unless the user asks.
 - After migration, the `plans/session-log.md` path in hooks must resolve relative to the **target** project root, not the template
