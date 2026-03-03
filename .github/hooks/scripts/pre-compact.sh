@@ -13,12 +13,13 @@ SESSION_ID=$(echo "$INPUT" | jq -r '.sessionId')
 CWD=$(echo "$INPUT" | jq -r '.cwd')
 TRIGGER=$(echo "$INPUT" | jq -r '.trigger')
 
-LOG_FILE="${CWD}/.github/hooks/session.log"
+LOG_FILE="${CWD}/.github/hooks/logs/session.log"
+mkdir -p "$(dirname "$LOG_FILE")"
 BRANCH=$(git -C "$CWD" branch --show-current 2>/dev/null || echo "unknown")
 DIRTY=$(git -C "$CWD" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
-LAST_COMMIT=$(git -C "$CWD" log --oneline -1 2>/dev/null | tr '"' "'" || echo "none")
+LAST_COMMIT=$(git -C "$CWD" log --oneline -1 2>/dev/null | tr -d "\"'" || echo "none")
 
-echo "[${TIMESTAMP}] PreCompact | trigger=${TRIGGER} branch=${BRANCH} dirty=${DIRTY} last_commit='${LAST_COMMIT}' | session=${SESSION_ID}" >> "$LOG_FILE"
+echo "[${TIMESTAMP}] PreCompact | session=${SESSION_ID} | trigger=${TRIGGER} branch=${BRANCH} dirty=${DIRTY} last_commit='${LAST_COMMIT}'" >> "$LOG_FILE"
 
 # Inject recovery context so the agent re-orients quickly after compaction
 jq -n \

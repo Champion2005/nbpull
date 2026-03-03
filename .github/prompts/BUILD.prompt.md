@@ -1,7 +1,7 @@
 ---
 description: "Execute an approved implementation plan phase by phase with review gates."
 argument-hint: "Path to the approved plan (plans/<feature>-plan.md) or feature name"
-tools: [execute, agent, memory, todo]
+tools: [agent, memory, todo]
 model: Claude Opus 4.6 (copilot)
 ---
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SessionStart hook — fires once when the agent session begins.
 # Detects project environment, checks auth status, and injects context.
-# Scoped to nbpull: Python/uv project, NetBox API, GitHub CLI only.
+# Tailored for netbox_data_puller: Python + GitHub only.
 #
 # Output: additionalContext injected into the agent's conversation window.
 
@@ -12,7 +12,8 @@ CWD=$(echo "$INPUT" | jq -r '.cwd')
 SESSION_ID=$(echo "$INPUT" | jq -r '.sessionId')
 TIMESTAMP=$(echo "$INPUT" | jq -r '.timestamp')
 
-LOG_FILE="${CWD}/.github/hooks/session.log"
+LOG_FILE="${CWD}/.github/hooks/logs/session.log"
+mkdir -p "$(dirname "$LOG_FILE")"
 echo "[${TIMESTAMP}] SessionStart | session=${SESSION_ID}" >> "$LOG_FILE"
 
 LINES=()

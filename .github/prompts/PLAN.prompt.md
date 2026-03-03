@@ -1,7 +1,7 @@
 ---
 description: "Generate a proposal and phased implementation plan from a curated context artifact."
 argument-hint: "Path to the context artifact (plans/<feature>-context.md) or feature name"
-tools: [execute, agent, memory, todo, vscode/askQuestions]
+tools: [agent, memory, todo, vscode/askQuestions]
 model: Claude Opus 4.6 (copilot)
 ---
 

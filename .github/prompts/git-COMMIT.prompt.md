@@ -1,7 +1,7 @@
 ---
 description: "Stage and commit changes. Automatically groups large changesets into atomic commits by logical area."
 argument-hint: "Commit message or topic — leave blank to auto-detect from changed files"
-tools: [execute, agent]
+tools: [agent]
 model: Claude Sonnet 4.6 (copilot)
 ---
 

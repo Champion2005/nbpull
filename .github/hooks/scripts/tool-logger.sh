@@ -9,18 +9,17 @@ set -euo pipefail
 
 INPUT=$(cat)
 CWD=$(echo "$INPUT" | jq -r '.cwd')
-LOG_FILE="${CWD}/.github/hooks/tool-audit.log"
+LOG_FILE="${CWD}/.github/hooks/logs/tool-audit.log"
+mkdir -p "$(dirname "$LOG_FILE")"
 
 TIMESTAMP=$(echo "$INPUT" | jq -r '.timestamp')
 SESSION_ID=$(echo "$INPUT" | jq -r '.sessionId')
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name')
 
-# Summarise input — collapse to single line, replace " with ' to avoid log breakage, truncate at 200 chars
-TOOL_INPUT=$(echo "$INPUT" | jq -c '.tool_input // {}' | tr -d '\n' | tr '"' "'" | head -c 200)
+# Sanitize: collapse to single line, strip both " and ' to prevent log line breakage, truncate
+TOOL_INPUT=$(echo "$INPUT" | jq -c '.tool_input // {}' | tr -d '\n' | tr -d "\"'" | head -c 200)
+TOOL_RESPONSE=$(echo "$INPUT" | jq -r '.tool_response // ""' | tr -d '\n' | tr -d "\"'" | head -c 150)
 
-# Summarise response — collapse, replace " with ', truncate at 150 chars
-TOOL_RESPONSE=$(echo "$INPUT" | jq -r '.tool_response // ""' | tr -d '\n' | tr '"' "'" | head -c 150)
-
-echo "[${TIMESTAMP}] ${TOOL_NAME} | in=[${TOOL_INPUT}] | out=[${TOOL_RESPONSE}] | session=${SESSION_ID}" >> "$LOG_FILE"
+echo "[${TIMESTAMP}] ${TOOL_NAME} | in='${TOOL_INPUT}' | out='${TOOL_RESPONSE}' | session=${SESSION_ID}" >> "$LOG_FILE"
 
 echo '{"continue": true}'

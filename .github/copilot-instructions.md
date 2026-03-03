@@ -27,7 +27,7 @@ PyPI: `nbpull` | Module: `netbox_data_puller` | Stack: Typer, httpx, Pydantic v2
 - **Gate before acting** — pause for user approval between stages
 - **Explicit over assumed** — ask one focused question when intent is unclear
 - **Parallelize when possible** — spawn parallel subagents for independent tasks
-- **Delegate via subagents** — main agent orchestrates only; delegates to `writer`, `reader`, `fetcher`, `github`
+- **Delegate via subagents** — main agent orchestrates only; never runs terminal commands directly; delegates to `writer`, `reader`, `fetcher`, `github`
 - **Minimal subagent briefings** — pass file paths and change descriptions, not file contents
 - **No secrets in commits** — never commit `.env`, tokens, or credentials
 

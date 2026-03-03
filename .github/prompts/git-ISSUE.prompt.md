@@ -1,7 +1,7 @@
 ---
 description: "Create, view, or triage GitHub issues. Supports bulk triage and linking issues to branches or PRs."
 argument-hint: "Issue title, number to view, or 'triage' to review open issues"
-tools: [execute, agent, vscode/askQuestions]
+tools: [agent, vscode/askQuestions]
 model: Claude Sonnet 4.6 (copilot)
 ---
 

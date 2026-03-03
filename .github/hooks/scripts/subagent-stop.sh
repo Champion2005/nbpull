@@ -12,15 +12,16 @@ INPUT=$(cat)
 
 TIMESTAMP=$(echo "$INPUT"       | jq -r '.timestamp')
 SESSION_ID=$(echo "$INPUT"      | jq -r '.sessionId')
-AGENT_ID=$(echo "$INPUT"        | jq -r '.agent_id')
-AGENT_TYPE=$(echo "$INPUT"      | jq -r '.agent_type')
+AGENT_ID=$(echo "$INPUT"        | jq -r '.agent_id'   | tr -d "\"'")
+AGENT_TYPE=$(echo "$INPUT"      | jq -r '.agent_type' | tr -d "\"'")
 STOP_HOOK_ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active')
 CWD=$(echo "$INPUT"             | jq -r '.cwd')
 
-LOG_FILE="${CWD}/.github/hooks/subagent.log"
+LOG_FILE="${CWD}/.github/hooks/logs/subagent.log"
+mkdir -p "$(dirname "$LOG_FILE")"
 
 # Append completion entry to session log
-echo "[${TIMESTAMP}] SubagentStop  | agent_type='${AGENT_TYPE}' | session=${SESSION_ID} agent_id=${AGENT_ID}" >> "$LOG_FILE"
+echo "[${TIMESTAMP}] SubagentStop  | session=${SESSION_ID} | agent_type='${AGENT_TYPE}' agent_id='${AGENT_ID}'" >> "$LOG_FILE"
 
 # Guard: if this hook is already running as part of a stop-hook cycle, do not block again.
 # This prevents the subagent from running indefinitely.

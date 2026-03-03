@@ -1,7 +1,7 @@
 ---
 description: "Start a new feature. Ingests context, curates requirements, and scaffolds plan artifacts."
 argument-hint: "Feature name and description, or point to existing context files"
-tools: [execute, agent, memory, todo, vscode/askQuestions]
+tools: [agent, memory, todo, vscode/askQuestions]
 model: Claude Opus 4.6 (copilot)
 ---
 

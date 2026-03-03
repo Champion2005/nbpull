@@ -1,7 +1,7 @@
 ---
 description: "Customize the .github workflow — prompts, agents, skills, hooks, and templates. Interactive guided setup."
 argument-hint: "What to customize: 'prompts', 'agents', 'skills', 'hooks', 'templates', or leave blank for guided tour"
-tools: [execute, agent, memory, vscode/askQuestions]
+tools: [agent, memory, vscode/askQuestions]
 model: Claude Opus 4.6 (copilot)
 ---
 

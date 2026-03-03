@@ -1,7 +1,7 @@
 ---
 description: "Create a pull request. Handles standard PRs and splits large branches into multiple focused PRs."
 argument-hint: "PR title or topic — leave blank to derive from branch and commits"
-tools: [execute, agent, vscode/askQuestions]
+tools: [agent, vscode/askQuestions]
 model: Claude Sonnet 4.6 (copilot)
 ---
 
