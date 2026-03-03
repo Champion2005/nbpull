@@ -1,0 +1,20 @@
+{
+  "hooks": {
+    "SubagentStart": [
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/subagent-start.sh",
+        "windows": "powershell -File .github/hooks/scripts/subagent-start.ps1",
+        "timeout": 10
+      }
+    ],
+    "SubagentStop": [
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/subagent-stop.sh",
+        "windows": "powershell -File .github/hooks/scripts/subagent-stop.ps1",
+        "timeout": 10
+      }
+    ]
+  }
+}

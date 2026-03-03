@@ -1,3 +1,7 @@
+---
+description: "Scaffold a new read-only CLI command — model, formatter, Typer command, tests, and docs."
+---
+
 # Add a New CLI Command
 
 Scaffold a new read-only CLI command for a NetBox resource.

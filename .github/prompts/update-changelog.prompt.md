@@ -1,3 +1,7 @@
+---
+description: "Add entries to CHANGELOG.md under [Unreleased] following Keep a Changelog format."
+---
+
 # Update Changelog
 
 Add entries to `CHANGELOG.md` following Keep a Changelog format.

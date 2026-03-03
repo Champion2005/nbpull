@@ -1,3 +1,7 @@
+---
+description: "Cut a release — semver bump, changelog promotion, make all, commit, tag, and push."
+---
+
 # Release nbpull
 
 Automates: version bump → changelog update → commit → tag → push.

@@ -19,6 +19,10 @@ Apply to: `src/netbox_data_puller/cli.py`
   `--output`/`-o` is not provided the CLI prompts for a filename with a
   default of `<command>_YYYY-MM-DD.json`. Use `_save_json()` in `cli.py`
   for all JSON file output — do not call `print_json()` from commands
+- The `--format csv` flag writes a flat CSV file; nested objects (NestedRef,
+  ChoiceRef) are reduced to their display string via `_flatten_record()`.
+  Use `_save_csv([_flatten_record(r) for r in records], output, "name")`.
+  Default filename is `<command>_YYYY-MM-DD.csv`
 - Exit codes: 0 = success, 1 = error, 2 = config/auth failure
 - Keep the CLI thin — business logic belongs in `client.py` and
   `formatters.py`
@@ -27,8 +31,9 @@ Apply to: `src/netbox_data_puller/cli.py`
 
 1. Add the Typer command function in `cli.py`
 2. Reuse existing filter options (copy from `prefixes` command), including
-   `output: OutputOpt = None` for JSON file output
-3. Call `_save_json(records, output, "command-name")` in the json branch
+   `output: OutputOpt = None` for JSON/CSV file output
+3. Handle all three format branches: `json` → `_save_json()`, `csv` →
+   `_save_csv([_flatten_record(r) for r in records], ...)`, else → formatter
 3. Add a formatter function in `formatters.py`
 4. Add a Pydantic model in `models/` if it's a new resource type
 5. Export the new model from `models/__init__.py`

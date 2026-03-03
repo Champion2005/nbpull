@@ -124,3 +124,17 @@ uv run pytest tests/test_client.py::test_name -v
 | `refactor/` | Code refactoring      |
 | `test/`     | Adding/updating tests |
 | `chore/`    | Maintenance / tooling |
+
+## Workflow Orchestration Principles
+
+These govern how the AI workflow system (prompts, subagents, skills) operates:
+
+- **Gate before acting** — pause for user approval between stages
+- **Smallest viable change** — no scope creep; do the minimum to satisfy the request
+- **Explicit over assumed** — ask one focused question when intent is unclear
+- **Parallelize when possible** — spawn parallel subagents for independent discovery tasks
+- **Delegate via subagents** — main agent orchestrates only; delegates code writing (`writer`), file reading (`reader`), web fetches (`fetcher`), git operations (`github`)
+- **Minimal subagent briefings** — pass file paths and change descriptions, not file contents
+- **Do not edit `.github/hooks/scripts/`** — hook scripts require manual review
+- **No secrets in commits** — never commit `.env`, tokens, or credentials
+- **No direct pushes to `main`** — use feature branches and PRs
