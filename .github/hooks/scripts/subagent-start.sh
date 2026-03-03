@@ -30,8 +30,11 @@ LOG_FILE="${CWD}/.github/hooks/logs/subagent.log"
 mkdir -p "$(dirname "$LOG_FILE")"
 _ERR_LOG="$LOG_FILE"  # redirect errors to real log
 
-# Append spawn entry to session log
-echo "[${TIMESTAMP}] SubagentStart | session=${SESSION_ID} | agent_type='${AGENT_TYPE}' agent_id='${AGENT_ID}'" >> "$LOG_FILE"
+# Deduplicate: VS Code fires SubagentStart twice per spawn (dispatch + init).
+# Only log if this agent_id hasn't been recorded yet.
+if ! grep -qF "agent_id='${AGENT_ID}'" "$LOG_FILE" 2>/dev/null; then
+  echo "[${TIMESTAMP}] SubagentStart | session=${SESSION_ID} | agent_type='${AGENT_TYPE}' agent_id='${AGENT_ID}'" >> "$LOG_FILE"
+fi
 
 # Inject enforcement context into the subagent's conversation window.
 # This runs for every spawned subagent, ensuring constraints are enforced even though
