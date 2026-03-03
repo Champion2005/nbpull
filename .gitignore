@@ -41,6 +41,6 @@ audit_report.md
 rfc1918_inventory_report.md
 rfc1918_crossref_report.md
 batch_prefixes.toml
-
+NetBox Location-IP Extract Report PRD.md
 # 🔒 uv lock (included for reproducibility — uncomment to ignore)
 # uv.lock
