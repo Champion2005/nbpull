@@ -18,7 +18,7 @@ CWD=$(echo "$INPUT" | jq -r '.cwd')
 LOG_FILE="${CWD}/.github/hooks/subagent.log"
 
 # Append spawn entry to session log
-echo "[${TIMESTAMP}] SubagentStart | session=${SESSION_ID} | agent_type='${AGENT_TYPE}' agent_id='${AGENT_ID}'" >> "$LOG_FILE"
+echo "[${TIMESTAMP}] SubagentStart | agent_type='${AGENT_TYPE}' | session=${SESSION_ID} agent_id=${AGENT_ID}" >> "$LOG_FILE"
 
 # Inject enforcement context into the subagent's conversation window.
 # This runs for every spawned subagent, ensuring constraints are enforced even though

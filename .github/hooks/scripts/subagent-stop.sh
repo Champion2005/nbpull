@@ -20,7 +20,7 @@ CWD=$(echo "$INPUT"             | jq -r '.cwd')
 LOG_FILE="${CWD}/.github/hooks/subagent.log"
 
 # Append completion entry to session log
-echo "[${TIMESTAMP}] SubagentStop  | session=${SESSION_ID} | agent_type='${AGENT_TYPE}' agent_id='${AGENT_ID}'" >> "$LOG_FILE"
+echo "[${TIMESTAMP}] SubagentStop  | agent_type='${AGENT_TYPE}' | session=${SESSION_ID} agent_id=${AGENT_ID}" >> "$LOG_FILE"
 
 # Guard: if this hook is already running as part of a stop-hook cycle, do not block again.
 # This prevents the subagent from running indefinitely.

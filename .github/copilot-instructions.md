@@ -1,140 +1,36 @@
 # Copilot Instructions — nbpull
 
-## Project Overview
-
-**nbpull** is a read-only CLI tool that queries NetBox IPAM data via
-its REST API. Package name on PyPI is `nbpull`; the Python module is
-`netbox_data_puller`.
-
 ## Critical Safety Invariant
 
-**This tool is read-only.** The `NetBoxClient` in `client.py` only
-exposes HTTP `GET` methods. Never add `POST`, `PUT`, `PATCH`, or
-`DELETE` capabilities — not in the client, CLI, or anywhere else. This
-invariant is enforced by code structure and verified by tests.
+**This tool is read-only.** The `NetBoxClient` in `client.py` only exposes HTTP
+`GET` methods. Never add `POST`, `PUT`, `PATCH`, or `DELETE` capabilities —
+not in the client, CLI, tests, or anywhere else.
 
-## Tech Stack
+## Project
 
-| Layer | Technology |
-|---|---|
-| CLI framework | [Typer](https://typer.tiangolo.com/) |
-| HTTP client | [httpx](https://www.python-httpx.org/) (async) |
-| Data models | [Pydantic v2](https://docs.pydantic.dev/) |
-| Configuration | [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) |
-| Output | [Rich](https://rich.readthedocs.io/) tables / JSON |
-| Linter / Formatter | [Ruff](https://docs.astral.sh/ruff/) |
-| Type checker | [mypy](https://mypy-lang.org/) (strict mode) |
-| Tests | [pytest](https://docs.pytest.org/) + [respx](https://github.com/lundberg/respx) |
-| Package manager | [uv](https://docs.astral.sh/uv/) |
+**nbpull** — read-only CLI for querying NetBox IPAM data via REST API.  
+PyPI: `nbpull` | Module: `netbox_data_puller` | Stack: Typer, httpx, Pydantic v2, Rich, uv
 
-## Module Layout
+## Core Rules
 
-```
-src/netbox_data_puller/
-├── __init__.py      # Package version (__version__)
-├── cli.py           # Typer commands, flag definitions, orchestration
-├── client.py        # Async GET-only NetBox API client
-├── config.py        # Pydantic Settings (.env / env vars)
-├── formatters.py    # Rich table + JSON renderers
-└── models/          # Pydantic v2 models per resource type
-    ├── common.py    # Shared types: NestedRef ({id, display}) and ChoiceRef ({value, label})
-    ├── aggregate.py  # IPAM Aggregate
-    ├── prefix.py
-    ├── ip_address.py
-    ├── vlan.py
-    ├── vrf.py
-    ├── site.py       # DCIM Site
-    ├── device.py     # DCIM Device
-    └── tenant.py     # Tenancy Tenant
-```
-
-`NestedRef` is used for related objects (e.g. `tenant`, `vrf`). `ChoiceRef` is used for enum fields (e.g. `status`, `role`). Both expose a `.display` property for consistent rendering.
-
-## Coding Conventions
-
-- **Python 3.13+** — use modern syntax (type unions with `|`, etc.)
+- **No write operations** — enforced everywhere, tested explicitly
+- **No `print()`** — use `rich.Console()` for user-facing output, `logging` for diagnostics
 - **Strict typing** — all code must pass `mypy --strict`
-- **Ruff** — line length 88, rule sets: E, F, I, N, W, UP, B, SIM, RUF
-- **f-strings** exclusively for interpolation — no `%` or `.format()`
-- **`logging`** stdlib for diagnostics — never use `print()`
-- **Async** all HTTP I/O — `async def` + `await`
-- **Pydantic v2 models** — `extra="allow"` to tolerate new API fields
-- **Conventional Commits** — `feat:`, `fix:`, `docs:`, `test:`,
-  `chore:`, `refactor:`, `ci:`
-
-## Versioning & Release
-
-- Version is stored in two places: `pyproject.toml` (project.version)
-  and `src/netbox_data_puller/__init__.py` (__version__). Both must
-  match.
-- Follows [Semantic Versioning](https://semver.org/) and
-  [Keep a Changelog](https://keepachangelog.com/).
-- Release flow: `make release VERSION=x.y.z`
-- See `docs/releasing.md` for the full checklist.
-
-## Testing
-
-- **Unit tests** (`make test`) — mock HTTP with respx, no network
-- **Integration tests** (`make test-integration`) — real NetBox API,
-  requires `NETBOX_URL` + `NETBOX_TOKEN`
-- Test files live in `tests/` and mirror the module they test
-  (e.g. `test_client.py` → `client.py`)
-- Use `pytest.mark.integration` for live-API tests
-- Run a single test: `uv run pytest tests/test_client.py::test_name -v`
-
-## Build & Run Commands
-
-```bash
-make install          # uv sync --all-groups
-make all              # format → lint → typecheck → test
-make test             # unit tests only
-make lint             # ruff check
-make format           # ruff format + fix
-make typecheck        # mypy strict
-make test-integration # requires live NetBox
-make release VERSION=x.y.z  # bump, changelog, tag, push
-
-# Single test
-uv run pytest tests/test_client.py::test_name -v
-```
-
-## Available Commands
-
-| Command | API Endpoint | Description |
-|---|---|---|
-| `prefixes` | `ipam/prefixes/` | IPAM prefixes |
-| `ip-addresses` | `ipam/ip-addresses/` | IPAM IP addresses |
-| `vlans` | `ipam/vlans/` | IPAM VLANs |
-| `vrfs` | `ipam/vrfs/` | IPAM VRFs |
-| `aggregates` | `ipam/aggregates/` | IPAM aggregates (top-level IP space by RIR) |
-| `sites` | `dcim/sites/` | DCIM sites |
-| `devices` | `dcim/devices/` | DCIM devices |
-| `tenants` | `tenancy/tenants/` | Tenancy tenants |
-| `rfc1918` | `ipam/prefixes/` (×3) | RFC 1918 Global VRF inventory with mapping status |
-| `batch-prefixes` | `ipam/prefixes/` | Batch prefix query from TOML |
-| `setup` | — | Interactive setup wizard |
-
-## Branch Naming
-
-| Prefix      | Purpose               |
-|-------------|-----------------------|
-| `feat/`     | New feature           |
-| `fix/`      | Bug fix               |
-| `docs/`     | Documentation only    |
-| `refactor/` | Code refactoring      |
-| `test/`     | Adding/updating tests |
-| `chore/`    | Maintenance / tooling |
-
-## Workflow Orchestration Principles
-
-These govern how the AI workflow system (prompts, subagents, skills) operates:
-
-- **Gate before acting** — pause for user approval between stages
-- **Smallest viable change** — no scope creep; do the minimum to satisfy the request
-- **Explicit over assumed** — ask one focused question when intent is unclear
-- **Parallelize when possible** — spawn parallel subagents for independent discovery tasks
-- **Delegate via subagents** — main agent orchestrates only; delegates code writing (`writer`), file reading (`reader`), web fetches (`fetcher`), git operations (`github`)
-- **Minimal subagent briefings** — pass file paths and change descriptions, not file contents
-- **Do not edit `.github/hooks/scripts/`** — hook scripts require manual review
+- **Ruff** — line length 88; rule sets E, F, I, N, W, UP, B, SIM, RUF
+- **Conventional Commits** — `feat:`, `fix:`, `docs:`, `test:`, `chore:`, `refactor:`, `ci:`
 - **No secrets in commits** — never commit `.env`, tokens, or credentials
 - **No direct pushes to `main`** — use feature branches and PRs
+- **Smallest viable change** — no scope creep; do the minimum to satisfy the request
+
+## Workflow Principles
+
+- **Gate before acting** — pause for user approval between stages
+- **Explicit over assumed** — ask one focused question when intent is unclear
+- **Parallelize when possible** — spawn parallel subagents for independent tasks
+- **Delegate via subagents** — main agent orchestrates only; delegates to `writer`, `reader`, `fetcher`, `github`
+- **Minimal subagent briefings** — pass file paths and change descriptions, not file contents
+- **No secrets in commits** — never commit `.env`, tokens, or credentials
+
+> **Detailed rules per module:** see `.github/instructions/`  
+> **Full workflow reference:** see `docs/workflow.md`
+

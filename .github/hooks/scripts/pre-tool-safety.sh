@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# PreToolUse hook — safety, auth, and environment validation before tool execution.
+# PreToolUse hook — safety and environment validation before tool execution.
 # Fires before every tool call. Exits immediately for non-terminal tools.
 #
-# Checks (all conditional on relevance):
+# Checks:
 #   - Dangerous command patterns: deny or require confirmation
 #   - GitHub CLI auth: warn if gh command and not logged in
-#   - Azure CLI auth: warn if az command and not logged in
-#   - Python venv: warn if python/pip command and venv not active
+#   - Python venv: warn if python/pip/uv command and venv not active
 #
 # Input: JSON with tool_name, tool_input, timestamp, sessionId, cwd
 
@@ -39,12 +38,6 @@ fi
 # terraform destroy
 if echo "$COMMAND" | grep -qE 'terraform\s+destroy'; then
   jq -n '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:"terraform destroy will permanently delete infrastructure. Confirm you intend this before proceeding."}}'
-  exit 0
-fi
-
-# az group delete / az resource delete
-if echo "$COMMAND" | grep -qE 'az\s+(group|resource)\s+delete'; then
-  jq -n '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:"Azure delete operation detected. This will permanently remove cloud resources. Confirm before proceeding."}}'
   exit 0
 fi
 

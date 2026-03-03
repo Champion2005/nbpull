@@ -1,3 +1,7 @@
+---
+applyTo: "src/netbox_data_puller/models/**"
+---
+
 # Models Instructions
 
 Apply to: `src/netbox_data_puller/models/**/*.py`

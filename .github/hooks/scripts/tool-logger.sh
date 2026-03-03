@@ -21,6 +21,6 @@ TOOL_INPUT=$(echo "$INPUT" | jq -c '.tool_input // {}' | tr -d '\n' | tr '"' "'"
 # Summarise response — collapse, replace " with ', truncate at 150 chars
 TOOL_RESPONSE=$(echo "$INPUT" | jq -r '.tool_response // ""' | tr -d '\n' | tr '"' "'" | head -c 150)
 
-echo "[${TIMESTAMP}] ${TOOL_NAME} | session=${SESSION_ID} | in='${TOOL_INPUT}' | out='${TOOL_RESPONSE}'" >> "$LOG_FILE"
+echo "[${TIMESTAMP}] ${TOOL_NAME} | in=[${TOOL_INPUT}] | out=[${TOOL_RESPONSE}] | session=${SESSION_ID}" >> "$LOG_FILE"
 
 echo '{"continue": true}'

@@ -18,7 +18,7 @@ BRANCH=$(git -C "$CWD" branch --show-current 2>/dev/null || echo "unknown")
 DIRTY=$(git -C "$CWD" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
 LAST_COMMIT=$(git -C "$CWD" log --oneline -1 2>/dev/null | tr '"' "'" || echo "none")
 
-echo "[${TIMESTAMP}] PreCompact | session=${SESSION_ID} | trigger=${TRIGGER} branch=${BRANCH} dirty=${DIRTY} last_commit='${LAST_COMMIT}'" >> "$LOG_FILE"
+echo "[${TIMESTAMP}] PreCompact | trigger=${TRIGGER} branch=${BRANCH} dirty=${DIRTY} last_commit='${LAST_COMMIT}' | session=${SESSION_ID}" >> "$LOG_FILE"
 
 # Inject recovery context so the agent re-orients quickly after compaction
 jq -n \

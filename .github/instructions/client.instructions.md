@@ -1,3 +1,7 @@
+---
+applyTo: "src/netbox_data_puller/client.py"
+---
+
 # Client Instructions
 
 Apply to: `src/netbox_data_puller/client.py`
