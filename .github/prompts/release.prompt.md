@@ -1,27 +1,105 @@
 ---
 description: "Cut a release — semver bump, changelog promotion, make all, commit, tag, and push."
+argument-hint: "Semver version string (e.g. 1.2.3)"
+tools: [execute, agent]
+model: Claude Sonnet 4.6 (copilot)
 ---
 
-# Release nbpull
+# 🚀 RELEASE — Cut a Release
 
-Automates: version bump → changelog update → commit → tag → push.
+You are running the **release** workflow. Automates: version bump → changelog promotion → quality gate → commit → tag → push.
 
-## Usage
+> **Irreversible after push.** Gate with the user before running `git push`.
 
-Run `make release VERSION=x.y.z` from the repo root.
+---
 
-## Steps
+## Step 1 — Pre-flight Check
 
-1. Verify the version follows semver (MAJOR.MINOR.PATCH)
-2. Update `__version__` in `src/netbox_data_puller/__init__.py`
-3. Update `version` in `pyproject.toml`
-4. Move items from `[Unreleased]` to a new `[x.y.z]` section in
-   `CHANGELOG.md` with today's date
-5. Update the comparison links at the bottom of `CHANGELOG.md`:
-   - `[Unreleased]` should compare `vx.y.z...HEAD`
-   - `[x.y.z]` should compare `vPREVIOUS...vx.y.z`
-6. Run `make all` to ensure format / lint / typecheck / test all pass
-7. Commit with message: `chore: release vx.y.z`
-8. Create git tag: `git tag vx.y.z`
-9. Push commit and tag: `git push && git push --tags`
-10. CI publishes to PyPI automatically via trusted publishers
+Spawn **`reader` subagent** in parallel with **`github` subagent** to check:
+
+- **Reader:** Current version in `pyproject.toml` and `src/netbox_data_puller/__init__.py` — do they match? What is the current `[Unreleased]` section in `CHANGELOG.md`?
+- **GitHub:** `git status` (must be clean), `git log origin/main..HEAD --oneline` (must be pushed or on main)
+
+If either check fails, report and stop. Do not proceed with a dirty tree or mismatched versions.
+
+---
+
+## Step 2 — Gate
+
+Present the release summary:
+
+```
+## Release Plan: v<VERSION>
+
+**Current version:** x.y.z
+**New version:** <VERSION>
+**Branch:** <branch> (<N> ahead of origin)
+
+**Changelog entries to promote:**
+<paste [Unreleased] content>
+
+---
+Proceed with release?
+```
+
+**Wait for explicit approval before touching any files.**
+
+---
+
+## Step 3 — Bump & Promote
+
+Spawn **`writer` subagent** to:
+1. Update `__version__` in `src/netbox_data_puller/__init__.py` to `<VERSION>`
+2. Update `version` in `pyproject.toml` to `<VERSION>`
+3. In `CHANGELOG.md`:
+   - Rename `## [Unreleased]` → `## [<VERSION>] — <today's date>`
+   - Add a new empty `## [Unreleased]` section above it
+   - Update comparison links at the bottom:
+     - `[Unreleased]` compares `v<VERSION>...HEAD`
+     - `[<VERSION>]` compares `vPREVIOUS...v<VERSION>`
+
+---
+
+## Step 4 — Quality Gate
+
+Spawn **`github` subagent** to run:
+
+```bash
+make all
+```
+
+If any step fails (format / lint / typecheck / test), report the failure and stop. Fix before proceeding.
+
+---
+
+## Step 5 — Commit, Tag & Push
+
+Spawn **`github` subagent** to:
+
+```bash
+git add src/netbox_data_puller/__init__.py pyproject.toml CHANGELOG.md
+git commit -m "chore: release v<VERSION>
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+git tag v<VERSION>
+git push && git push --tags
+```
+
+---
+
+## Step 6 — Report
+
+```
+## ✅ Released v<VERSION>
+
+**Commit:** <sha>
+**Tag:** v<VERSION>
+**Pushed:** ✅
+
+CI will run on push. PyPI publish triggers automatically when a GitHub
+Release is created from tag v<VERSION>.
+
+---
+Next: create a GitHub Release at https://github.com/<owner>/nbpull/releases/new
+```
+

@@ -40,9 +40,9 @@ Prompts are invoked by the user (`/START`, `/PLAN`, etc.). Each one orchestrates
 | `git-PUSH` | Push branch — checks divergence, sets upstream, reports PR status |
 | `git-PR` | Open a PR — writes description, handles large branch splits |
 | `git-ISSUE` | Create or triage GitHub issues |
-| `new-command` | Scaffold a new read-only CLI command (model → formatter → CLI → tests → docs) |
-| `release` | Cut a release — bumps version, promotes changelog, tags, pushes |
-| `update-changelog` | Add entries to `CHANGELOG.md` under `[Unreleased]` |
+| `new-command` | Scaffold a new read-only CLI command — discovers patterns, writes model/formatter/CLI/tests/docs, gates before writing |
+| `release` | Cut a release — pre-flight check, gate, bump version, promote changelog, `make all`, commit, tag, push |
+| `update-changelog` | Add entries to `CHANGELOG.md` — auto-detects changes from git diff if no input, gates before writing |
 | `workflow-CUSTOMIZE` | Modify the workflow itself — guided interactive setup |
 
 ---
