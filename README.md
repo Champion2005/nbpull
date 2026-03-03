@@ -4,6 +4,7 @@
 [![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Typed](https://img.shields.io/badge/typing-strict-brightgreen.svg)](https://mypy-lang.org/)
+[![NetBox 4.4+](https://img.shields.io/badge/NetBox-4.4%2B-orange.svg)](https://netbox.dev)
 
 **Read-only CLI tool to pull IPAM data from
 [NetBox](https://netbox.dev).**
@@ -12,6 +13,11 @@
 > POST / PUT / PATCH / DELETE requests are ever made. The HTTP client is
 > hardcoded to GET-only — this invariant is enforced by code structure
 > and verified by tests.
+
+> **🌐 NetBox compatibility:** Tested against NetBox Cloud v4.4.10.
+> Compatible with NetBox v3.x+ (legacy `site` field) and v4.2+
+> (generic `scope` relation). The `Prefix` model transparently handles
+> both via the `resolved_site` property.
 
 ---
 
@@ -99,7 +105,7 @@ nbpull batch-prefixes --file my_prefixes.toml --status-only
 | `nbpull devices` | List DCIM devices |
 | `nbpull tenants` | List tenancy tenants |
 | `nbpull rfc1918` | Inventory Global VRF RFC 1918 prefixes with mapping status |
-| `nbpull location-report` | SMO/CMDB export — mapped prefixes as CSV for ServiceNow |
+| `nbpull location-report` | Location-to-IP report — mapped prefixes with PRD and general columns |
 | `nbpull batch-prefixes` | Query multiple prefixes from a TOML file |
 
 ### Common Flags
