@@ -11,6 +11,16 @@ project adheres to
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.3.0] — 2026-03-03
+
+### Added
+
 - 🌐 **NetBox v4.4+ compatibility** — `Prefix` model now supports the
   generic `scope` relation (`scope_type`, `scope_id`, `scope`) introduced
   in NetBox v4.2. A `resolved_site` property transparently handles both
@@ -165,7 +175,8 @@ project adheres to
 - 🔒 Read-only safety guarantee — only GET requests, ever
 - ⚙️ Configuration via `.env` / environment variables (pydantic-settings)
 
-[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Champion2005/nbpull/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Champion2005/nbpull/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Champion2005/nbpull/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/Champion2005/nbpull/compare/v0.1.2...v0.1.3
