@@ -526,6 +526,8 @@ def print_rfc1918_inventory(records: list[Any]) -> None:
     table.add_column("Status")
     table.add_column("Site")
     table.add_column("Tenant")
+    table.add_column("Role")
+    table.add_column("Description", max_width=40)
 
     for r in records:
         table.add_row(
@@ -535,16 +537,25 @@ def print_rfc1918_inventory(records: list[Any]) -> None:
             _styled_status(r.status),
             _display_or_dash(r.site),
             _display_or_dash(r.tenant),
+            _display_or_dash(r.role),
+            r.description or "—",
         )
 
     mapped = sum(1 for r in records if _mapping_status(r) == "mapped")
     unmapped = sum(1 for r in records if _mapping_status(r) == "unmapped")
     ambiguous = len(records) - mapped - unmapped
+    total = len(records)
+    coverage_pct = (mapped / total * 100) if total > 0 else 0.0
+    target_met = coverage_pct >= 90.0
+    coverage_style = "green" if target_met else "red"
+    target_label = "✅ target met" if target_met else "❌ below 90% target"
 
     console.print(table)
     console.print(
-        f"[dim]  {len(records)} prefixes — "
+        f"[dim]  {total} prefixes — "
         f"[green]{mapped} mapped[/green], "
         f"[red]{unmapped} unmapped[/red], "
-        f"[yellow]{ambiguous} ambiguous[/yellow][/dim]\n"
+        f"[yellow]{ambiguous} ambiguous[/yellow]  ·  "
+        f"[{coverage_style}]{coverage_pct:.1f}% coverage[/{coverage_style}] "
+        f"[dim]({target_label})[/dim][/dim]\n"
     )

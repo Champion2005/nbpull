@@ -64,6 +64,25 @@ class TestPrefixesCommand:
 
     @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._get_settings")
+    def test_prefixes_csv(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+        tmp_path: Path,
+    ) -> None:
+        mock_fetch.return_value = MOCK_PREFIX_RESPONSE
+        out = tmp_path / "out.csv"
+        result = runner.invoke(
+            app, ["prefixes", "--format", "csv", "--output", str(out)]
+        )
+        assert result.exit_code == 0
+        assert out.exists()
+        content = out.read_text()
+        assert "prefix" in content  # header row
+        assert "10.0.0.0/8" in content  # data row
+
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
     def test_prefixes_passes_filters(
         self,
         mock_settings: AsyncMock,
@@ -945,10 +964,208 @@ class TestRfc1918Command:
         result = runner.invoke(app, ["rfc1918"])
         assert result.exit_code == 0
 
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_csv(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+        tmp_path: Path,
+    ) -> None:
+        mock_fetch.return_value = MOCK_RFC1918_RESPONSE
+        out = tmp_path / "out.csv"
+        result = runner.invoke(
+            app, ["rfc1918", "--format", "csv", "--output", str(out)]
+        )
+        assert result.exit_code == 0
+        assert out.exists()
+        content = out.read_text()
+        assert "prefix" in content  # header
+        assert "10.0.0.0/24" in content
+
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_exclude_role(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        """--exclude-role filters out prefixes with a matching role."""
+        response_with_role = [
+            {
+                **MOCK_RFC1918_RESPONSE[0],
+                "role": {"id": 1, "display": "Kubernetes"},
+            },
+            MOCK_RFC1918_RESPONSE[1],
+        ]
+        mock_fetch.return_value = response_with_role
+        result = runner.invoke(app, ["rfc1918", "--exclude-role", "kubernetes"])
+        assert result.exit_code == 0
+        # kubernetes-role prefix should be excluded
+        assert "10.0.0" not in result.output
+
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_status_filter(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        """--status active filters out non-active prefixes."""
+        mock_fetch.return_value = MOCK_RFC1918_RESPONSE  # [0]=active, [1]=reserved
+        result = runner.invoke(app, ["rfc1918", "--status", "active"])
+        assert result.exit_code == 0
+        assert "10.0.0" in result.output  # active prefix visible
+        assert "192.168" not in result.output  # reserved prefix filtered out
+
 
 # ------------------------------------------------------------------
-# Config exit code
+# Location report
 # ------------------------------------------------------------------
+
+
+MOCK_RFC1918_MAPPED = [
+    {
+        "id": 1,
+        "display": "10.0.0.0/24",
+        "prefix": "10.0.0.0/24",
+        "status": {"value": "active", "label": "Active"},
+        "vrf": None,
+        "tenant": {"id": 1, "display": "Ops"},
+        "site": {"id": 1, "display": "NYC"},
+        "vlan": None,
+        "role": None,
+        "is_pool": False,
+        "mark_utilized": False,
+        "description": "Core network",
+        "tags": [],
+    },
+    {
+        "id": 2,
+        "display": "192.168.0.0/24",
+        "prefix": "192.168.0.0/24",
+        "status": {"value": "reserved", "label": "Reserved"},
+        "vrf": None,
+        "tenant": None,
+        "site": None,  # unmapped — should be excluded
+        "vlan": None,
+        "role": None,
+        "is_pool": False,
+        "mark_utilized": False,
+        "description": "",
+        "tags": [],
+    },
+]
+
+
+class TestLocationReport:
+    @patch("netbox_data_puller.cli._fetch_sites_by_ids", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_location_report_csv(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+        mock_sites: AsyncMock,
+        tmp_path: Path,
+    ) -> None:
+        """location-report writes mapped prefixes to CSV."""
+        mock_fetch.return_value = MOCK_RFC1918_MAPPED
+        mock_sites.return_value = {}
+        out = tmp_path / "smo.csv"
+        result = runner.invoke(app, ["location-report", "--output", str(out)])
+        assert result.exit_code == 0
+        assert out.exists()
+        content = out.read_text()
+        assert "prefix" in content  # header
+        assert "10.0.0.0/24" in content  # mapped prefix present
+        assert "192.168.0.0/24" not in content  # unmapped excluded
+
+    @patch("netbox_data_puller.cli._fetch_sites_by_ids", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_location_report_enriches_region_facility(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+        mock_sites: AsyncMock,
+        tmp_path: Path,
+    ) -> None:
+        """region and facility are populated from the enriched Site object."""
+        from netbox_data_puller.models.site import Site
+
+        mock_fetch.return_value = MOCK_RFC1918_MAPPED
+        mock_sites.return_value = {
+            1: Site.model_validate(
+                {
+                    "id": 1,
+                    "display": "NYC",
+                    "name": "NYC",
+                    "slug": "nyc",
+                    "region": {"id": 10, "display": "Ontario"},
+                    "tenant": None,
+                    "status": None,
+                    "facility": "111 Main St",
+                    "time_zone": None,
+                    "description": "",
+                    "tags": [],
+                }
+            )
+        }
+        out = tmp_path / "smo.csv"
+        result = runner.invoke(app, ["location-report", "--output", str(out)])
+        assert result.exit_code == 0
+        content = out.read_text()
+        assert "Ontario" in content
+        assert "111 Main St" in content
+
+    @patch("netbox_data_puller.cli._fetch_sites_by_ids", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_location_report_json(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+        mock_sites: AsyncMock,
+        tmp_path: Path,
+    ) -> None:
+        mock_fetch.return_value = MOCK_RFC1918_MAPPED
+        mock_sites.return_value = {}
+        out = tmp_path / "out.json"
+        result = runner.invoke(
+            app, ["location-report", "--format", "json", "--output", str(out)]
+        )
+        assert result.exit_code == 0
+        assert out.exists()
+        assert '"prefix"' in out.read_text()
+
+    @patch("netbox_data_puller.cli._fetch_sites_by_ids", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_location_report_exclude_role(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+        mock_sites: AsyncMock,
+        tmp_path: Path,
+    ) -> None:
+        response = [
+            {
+                **MOCK_RFC1918_MAPPED[0],
+                "role": {"id": 1, "display": "Kubernetes"},
+            },
+        ]
+        mock_fetch.return_value = response
+        mock_sites.return_value = {}
+        out = tmp_path / "smo.csv"
+        result = runner.invoke(
+            app,
+            ["location-report", "--exclude-role", "kubernetes", "--output", str(out)],
+        )
+        assert result.exit_code == 0
+        content = out.read_text()
+        # kubernetes prefix excluded → empty data rows
+        assert "10.0.0.0/24" not in content
 
 
 class TestConfigError:

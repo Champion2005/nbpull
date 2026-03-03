@@ -4,7 +4,9 @@ All commands are READ-ONLY — no data is ever written to NetBox.
 """
 
 import asyncio
+import csv
 import datetime
+import io
 import json
 import logging
 import re
@@ -73,6 +75,7 @@ class OutputFormat(StrEnum):
 
     table = "table"
     json = "json"
+    csv = "csv"
 
 
 # Common option type aliases
@@ -140,7 +143,7 @@ OutputOpt = Annotated[
         "--output",
         "-o",
         help=(
-            "Write JSON output to this file. "
+            "Write JSON/CSV output to this file. "
             "If omitted, you will be prompted for a filename."
         ),
     ),
@@ -180,6 +183,77 @@ def _save_json(records: list[Any], output: Path | None, command_name: str) -> No
     output.write_text(json.dumps(data, indent=2, default=str))
     console.print(
         f"[bold green]✅ {len(records)} record(s) saved to "
+        f"[cyan]{output}[/cyan][/bold green]"
+    )
+
+
+def _flatten_record(record: Any) -> dict[str, Any]:
+    """Flatten a Pydantic model to a dict suitable for CSV output.
+
+    Nested objects (NestedRef, ChoiceRef) are reduced to their display
+    string so every CSV cell is a plain scalar.
+    """
+    raw = record.model_dump(mode="json") if hasattr(record, "model_dump") else record
+    flat: dict[str, Any] = {}
+    for key, val in raw.items():
+        if isinstance(val, dict):
+            # NestedRef / ChoiceRef — use display or label or value
+            flat[key] = (
+                val.get("display")
+                or val.get("label")
+                or val.get("value")
+                or val.get("name")
+                or ""
+            )
+        elif isinstance(val, list):
+            flat[key] = ", ".join(
+                (
+                    item.get("display") or item.get("name") or str(item)
+                    if isinstance(item, dict)
+                    else str(item)
+                )
+                for item in val
+            )
+        else:
+            flat[key] = val if val is not None else ""
+    return flat
+
+
+def _save_csv(
+    rows: list[dict[str, Any]],
+    output: Path | None,
+    command_name: str,
+) -> None:
+    """Serialise *rows* (list of flat dicts) to CSV and write to a file.
+
+    If *output* is ``None``, the user is prompted for a filename with a
+    sensible default (``<command>_YYYY-MM-DD.csv``).
+    """
+    if output is None:
+        today = datetime.date.today().isoformat()
+        default_name = f"{command_name}_{today}.csv"
+        raw = Prompt.ask(
+            "[cyan]Output file[/cyan]",
+            console=console,
+            default=default_name,
+        )
+        output = Path(raw.strip())
+
+    if not rows:
+        output.write_text("")
+        console.print(
+            f"[bold yellow]⚠️  0 records — empty file written to "
+            f"[cyan]{output}[/cyan][/bold yellow]"
+        )
+        return
+
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=list(rows[0].keys()))
+    writer.writeheader()
+    writer.writerows(rows)
+    output.write_text(buf.getvalue())
+    console.print(
+        f"[bold green]✅ {len(rows)} record(s) saved to "
         f"[cyan]{output}[/cyan][/bold green]"
     )
 
@@ -726,6 +800,8 @@ def prefixes(
 
     if fmt == OutputFormat.json:
         _save_json(records, output, "prefixes")
+    elif fmt == OutputFormat.csv:
+        _save_csv([_flatten_record(r) for r in records], output, "prefixes")
     elif status_only:
         print_prefixes_status(records)
     else:
@@ -773,6 +849,8 @@ def ip_addresses(
 
     if fmt == OutputFormat.json:
         _save_json(records, output, "ip-addresses")
+    elif fmt == OutputFormat.csv:
+        _save_csv([_flatten_record(r) for r in records], output, "ip-addresses")
     else:
         print_ip_addresses(records)
 
@@ -808,6 +886,8 @@ def vlans(
 
     if fmt == OutputFormat.json:
         _save_json(records, output, "vlans")
+    elif fmt == OutputFormat.csv:
+        _save_csv([_flatten_record(r) for r in records], output, "vlans")
     else:
         print_vlans(records)
 
@@ -839,6 +919,8 @@ def vrfs(
 
     if fmt == OutputFormat.json:
         _save_json(records, output, "vrfs")
+    elif fmt == OutputFormat.csv:
+        _save_csv([_flatten_record(r) for r in records], output, "vrfs")
     else:
         print_vrfs(records)
 
@@ -875,6 +957,8 @@ def aggregates(
 
     if fmt == OutputFormat.json:
         _save_json(records, output, "aggregates")
+    elif fmt == OutputFormat.csv:
+        _save_csv([_flatten_record(r) for r in records], output, "aggregates")
     else:
         print_aggregates(records)
 
@@ -910,6 +994,8 @@ def sites(
 
     if fmt == OutputFormat.json:
         _save_json(records, output, "sites")
+    elif fmt == OutputFormat.csv:
+        _save_csv([_flatten_record(r) for r in records], output, "sites")
     else:
         print_sites(records)
 
@@ -947,6 +1033,8 @@ def devices(
 
     if fmt == OutputFormat.json:
         _save_json(records, output, "devices")
+    elif fmt == OutputFormat.csv:
+        _save_csv([_flatten_record(r) for r in records], output, "devices")
     else:
         print_devices(records)
 
@@ -981,6 +1069,8 @@ def tenants(
 
     if fmt == OutputFormat.json:
         _save_json(records, output, "tenants")
+    elif fmt == OutputFormat.csv:
+        _save_csv([_flatten_record(r) for r in records], output, "tenants")
     else:
         print_tenants(records)
 
@@ -1023,6 +1113,25 @@ async def _fetch_rfc1918_blocks(
     return results
 
 
+async def _fetch_sites_by_ids(site_ids: list[int]) -> dict[int, Site]:
+    """Batch-fetch full Site objects for a list of IDs.
+
+    Returns a mapping of site_id → Site.  Used to enrich location-report
+    rows with region and facility data that is not available on the prefix
+    NestedRef alone.
+    """
+    if not site_ids:
+        return {}
+    settings = _get_settings()
+    async with NetBoxClient(settings) as client:
+        raw = await client.get(
+            "dcim/sites/",
+            {"id": site_ids},
+            max_results=len(site_ids) + 10,
+        )
+    return {r["id"]: Site.model_validate(r) for r in raw}
+
+
 def _rfc1918_mapping_status(prefix: Prefix) -> str:
     """Derive mapping status from site/tenant assignments.
 
@@ -1042,6 +1151,28 @@ def _rfc1918_mapping_status(prefix: Prefix) -> str:
 @app.command()
 def rfc1918(
     mapping_status: MappingStatusOpt = None,
+    status: Annotated[
+        str | None,
+        typer.Option(
+            "--status",
+            help=(
+                "Filter by prefix status "
+                "(active, reserved, deprecated, container). "
+                "Use 'active' to exclude decommissioned prefixes."
+            ),
+        ),
+    ] = None,
+    exclude_role: Annotated[
+        str | None,
+        typer.Option(
+            "--exclude-role",
+            "-R",
+            help=(
+                "Exclude prefixes whose role matches this name "
+                "(e.g. 'kubernetes', 'docker'). Case-insensitive."
+            ),
+        ),
+    ] = None,
     limit: LimitOpt = 500,
     fmt: FormatOpt = OutputFormat.table,
     output: OutputOpt = None,
@@ -1058,6 +1189,8 @@ def rfc1918(
       ambiguous — has one but not the other
 
     Use --mapping-status to filter by a specific label.
+    Use --status active to exclude decommissioned/deprecated prefixes.
+    Use --exclude-role to drop stub/infrastructure networks (e.g. kubernetes).
     """
     _configure_logging(verbose)
 
@@ -1073,18 +1206,136 @@ def rfc1918(
 
     records = [Prefix.model_validate(r) for r in raw]
 
+    if status:
+        records = [r for r in records if r.status and r.status.value == status]
+
     if mapping_status:
         records = [r for r in records if _rfc1918_mapping_status(r) == mapping_status]
 
+    if exclude_role:
+        exclude_lower = exclude_role.lower()
+        records = [
+            r
+            for r in records
+            if not (r.role and r.role.display.lower() == exclude_lower)
+        ]
+
     if fmt == OutputFormat.json:
         _save_json(records, output, "rfc1918")
+    elif fmt == OutputFormat.csv:
+        _save_csv([_flatten_record(r) for r in records], output, "rfc1918")
     else:
         print_rfc1918_inventory(records)
 
 
 # ------------------------------------------------------------------
-# Batch commands
+# Location report (Phase 2 scaffold — SMO export)
 # ------------------------------------------------------------------
+
+
+def _prefix_to_location_row(prefix: Any, sites: dict[int, Site]) -> dict[str, Any]:
+    """Flatten a mapped Prefix to the SMO location-report CSV row shape.
+
+    ``sites`` is a mapping of site_id → Site fetched from dcim/sites/,
+    used to populate region and facility which are not available on the
+    NestedRef returned with each prefix.
+    """
+    site_obj = sites.get(prefix.site.id) if prefix.site else None
+    return {
+        "prefix": prefix.prefix,
+        "site": prefix.site.display if prefix.site else "",
+        "region": (site_obj.region.display if site_obj and site_obj.region else ""),
+        "facility": site_obj.facility if site_obj else "",
+        "tenant": prefix.tenant.display if prefix.tenant else "",
+        "description": prefix.description or "",
+    }
+
+
+@app.command(name="location-report")
+def location_report(
+    exclude_role: Annotated[
+        str | None,
+        typer.Option(
+            "--exclude-role",
+            "-R",
+            help=(
+                "Exclude prefixes whose role matches this name "
+                "(e.g. 'kubernetes'). Case-insensitive."
+            ),
+        ),
+    ] = None,
+    limit: LimitOpt = 1000,
+    fmt: FormatOpt = OutputFormat.csv,
+    output: OutputOpt = None,
+    verbose: VerboseOpt = False,
+) -> None:
+    """📋 Location-to-IP report for SMO/CMDB (Phase 2 scaffold).
+
+    Extracts all **mapped** RFC 1918 Global VRF prefixes (those with a
+    site assignment) and outputs them in a flat format suitable for
+    ServiceNow CMDB discovery scanning.
+
+    Columns: prefix, site, region, facility, tenant, description
+
+    Region and facility are enriched from the full Site record — not just
+    the NestedRef on the prefix — so these columns are always populated
+    when the site has that data in NetBox.
+
+    Default output format is CSV (--format csv).  Use --format json for
+    machine-readable JSON.  Use --output / -o to specify the output file
+    directly (skips the interactive prompt).
+
+    \b
+    Example:
+      nbpull location-report                        # CSV, prompted filename
+      nbpull location-report --output smo.csv       # CSV, direct path
+      nbpull location-report --exclude-role kubernetes
+    """
+    _configure_logging(verbose)
+
+    with Progress(
+        SpinnerColumn("dots"),
+        TextColumn("[bold cyan]{task.description}"),
+        TimeElapsedColumn(),
+        console=console,
+        transient=True,
+    ) as progress:
+        progress.add_task("Fetching RFC 1918 prefixes…", total=None)
+        raw = asyncio.run(_fetch_rfc1918_blocks(max_results=limit))
+
+    records = [Prefix.model_validate(r) for r in raw]
+
+    # Only mapped prefixes (site assigned) — unmapped excluded per PRD
+    records = [r for r in records if r.site is not None]
+
+    if exclude_role:
+        exclude_lower = exclude_role.lower()
+        records = [
+            r
+            for r in records
+            if not (r.role and r.role.display.lower() == exclude_lower)
+        ]
+
+    # Enrich with full site details (region, facility)
+    unique_site_ids = list({r.site.id for r in records if r.site})
+    with Progress(
+        SpinnerColumn("dots"),
+        TextColumn("[bold cyan]{task.description}"),
+        TimeElapsedColumn(),
+        console=console,
+        transient=True,
+    ) as progress:
+        progress.add_task(f"Enriching {len(unique_site_ids)} site(s)…", total=None)
+        sites_by_id = asyncio.run(_fetch_sites_by_ids(unique_site_ids))
+
+    if fmt == OutputFormat.json:
+        _save_json(records, output, "location-report")
+    else:
+        rows = [_prefix_to_location_row(r, sites_by_id) for r in records]
+        _save_csv(rows, output, "location-report")
+
+    console.print(f"[dim]  {len(records)} mapped prefix(es) exported.[/dim]")
+
 
 _DEFAULT_BATCH_FILE = "batch_prefixes.toml"
 
@@ -1201,6 +1452,9 @@ def batch_prefixes(
     if fmt == OutputFormat.json:
         all_records = [r for _, records in batch_results for r in records]
         _save_json(all_records, output, "batch-prefixes")
+    elif fmt == OutputFormat.csv:
+        all_records = [r for _, records in batch_results for r in records]
+        _save_csv([_flatten_record(r) for r in all_records], output, "batch-prefixes")
     elif status_only:
         print_batch_summary(batch_results, not_found)
     else:

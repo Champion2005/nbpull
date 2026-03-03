@@ -9,6 +9,32 @@ project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- 📊 CSV output format (`--format csv`) on all data commands — writes a
+  flat CSV file; nested NetBox objects (site, tenant, role, etc.) are
+  reduced to their display string. Default output file is
+  `<command>_YYYY-MM-DD.csv` when `--output` is not provided.
+- 🖧 `--exclude-role`/`-R` filter on `rfc1918` and `location-report` —
+  exclude prefixes whose role matches the given name (case-insensitive),
+  e.g. `--exclude-role kubernetes` to drop stub/infrastructure networks
+  that are out of scope per the PRD.
+- 🗂️ Role and Description columns added to `rfc1918` table output.
+- 🔍 `--status` filter on `rfc1918` — filter audit to a specific prefix
+  status (e.g. `--status active` to exclude deprecated/decommissioned
+  prefixes per PRD out-of-scope).
+- 📊 Coverage percentage displayed in `rfc1918` table footer — shows
+  `X.X% coverage` with a green/red indicator against the 90% PRD target
+  (SC-1: "100% mapped, or 90%+ with remaining delegated to NetOps").
+- 📋 `location-report` command (Phase 2 scaffold) — extracts all
+  **mapped** RFC 1918 Global VRF prefixes (site-assigned only) and writes
+  a flat CSV with columns `prefix, site, region, facility, tenant,
+  description` for ServiceNow CMDB discovery scanning. Default format is
+  `csv`; supports `--format json`, `--output`/`-o`, and
+  `--exclude-role`/`-R`. Region and facility are **enriched** from full
+  Site objects (batch-fetched via `dcim/sites/`), not just the NestedRef
+  on each prefix.
+
 ## [0.2.1] — 2026-03-02
 
 ### Added

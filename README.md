@@ -27,7 +27,7 @@
 - 🏛️ **Tenants** — list tenancy tenants
 - 🌐 **RFC 1918** — inventory Global VRF RFC 1918 prefixes with mapping status
 - 📦 **Batch queries** — check many prefixes at once from a TOML file
-- 🎨 Rich table output (default) or JSON saved to a file (`--format json`)
+- 🎨 Rich table output (default), JSON saved to a file (`--format json`), or CSV (`--format csv`)
 - 🔎 Filter by status, VRF, tenant, site, tag, or free-text search
 - ⚡ Async HTTP with automatic pagination
 - 🔒 Strict typing (mypy strict mode + Pydantic v2)
@@ -99,6 +99,7 @@ nbpull batch-prefixes --file my_prefixes.toml --status-only
 | `nbpull devices` | List DCIM devices |
 | `nbpull tenants` | List tenancy tenants |
 | `nbpull rfc1918` | Inventory Global VRF RFC 1918 prefixes with mapping status |
+| `nbpull location-report` | SMO/CMDB export — mapped prefixes as CSV for ServiceNow |
 | `nbpull batch-prefixes` | Query multiple prefixes from a TOML file |
 
 ### Common Flags
@@ -112,7 +113,7 @@ nbpull batch-prefixes --file my_prefixes.toml --status-only
 | `--tag` | Filter by tag slug |
 | `--search` / `-s` | Free-text search |
 | `--limit` / `-l` | Max results (default: 50) |
-| `--format` / `-f` | Output format: `table` (default) or `json` (writes to file) |
+| `--format` / `-f` | Output format: `table` (default), `json` (writes to file), or `csv` |
 | `--output` / `-o` | JSON output file path (prompts with default if omitted) |
 | `--verbose` / `-v` | Enable debug logging |
 
