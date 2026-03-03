@@ -431,6 +431,4 @@ class TestPrintRfc1918Inventory:
 
     def test_renders_with_scope_data(self) -> None:
         """v4.4 scope-based prefixes render correctly in the table."""
-        print_rfc1918_inventory(
-            [_SAMPLE_RFC1918_MAPPED, _SAMPLE_RFC1918_AMBIGUOUS]
-        )
+        print_rfc1918_inventory([_SAMPLE_RFC1918_MAPPED, _SAMPLE_RFC1918_AMBIGUOUS])
