@@ -869,7 +869,10 @@ MOCK_RFC1918_RESPONSE = [
         "status": {"value": "active", "label": "Active"},
         "vrf": None,
         "tenant": {"id": 1, "display": "Ops"},
-        "site": {"id": 1, "display": "NYC"},
+        "site": None,
+        "scope_type": "dcim.site",
+        "scope_id": 1,
+        "scope": {"id": 1, "display": "NYC"},
         "vlan": None,
         "role": None,
         "is_pool": False,
@@ -885,6 +888,9 @@ MOCK_RFC1918_RESPONSE = [
         "vrf": None,
         "tenant": None,
         "site": None,
+        "scope_type": None,
+        "scope_id": None,
+        "scope": None,
         "vlan": None,
         "role": None,
         "is_pool": False,
@@ -1032,7 +1038,10 @@ MOCK_RFC1918_MAPPED = [
         "status": {"value": "active", "label": "Active"},
         "vrf": None,
         "tenant": {"id": 1, "display": "Ops"},
-        "site": {"id": 1, "display": "NYC"},
+        "site": None,
+        "scope_type": "dcim.site",
+        "scope_id": 1,
+        "scope": {"id": 1, "display": "NYC"},
         "vlan": None,
         "role": None,
         "is_pool": False,
@@ -1047,7 +1056,10 @@ MOCK_RFC1918_MAPPED = [
         "status": {"value": "reserved", "label": "Reserved"},
         "vrf": None,
         "tenant": None,
-        "site": None,  # unmapped — should be excluded
+        "site": None,
+        "scope_type": None,
+        "scope_id": None,
+        "scope": None,
         "vlan": None,
         "role": None,
         "is_pool": False,
@@ -1166,6 +1178,43 @@ class TestLocationReport:
         content = out.read_text()
         # kubernetes prefix excluded → empty data rows
         assert "10.0.0.0/24" not in content
+
+    @patch("netbox_data_puller.cli._fetch_sites_by_ids", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_location_report_legacy_site_fallback(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+        mock_sites: AsyncMock,
+        tmp_path: Path,
+    ) -> None:
+        """Pre-v4.2 responses with site field (no scope) still work."""
+        legacy_data = [
+            {
+                "id": 1,
+                "display": "10.0.0.0/24",
+                "prefix": "10.0.0.0/24",
+                "status": {"value": "active", "label": "Active"},
+                "vrf": None,
+                "tenant": {"id": 1, "display": "Ops"},
+                "site": {"id": 1, "display": "NYC"},
+                "vlan": None,
+                "role": None,
+                "is_pool": False,
+                "mark_utilized": False,
+                "description": "Legacy",
+                "tags": [],
+            },
+        ]
+        mock_fetch.return_value = legacy_data
+        mock_sites.return_value = {}
+        out = tmp_path / "legacy.csv"
+        result = runner.invoke(app, ["location-report", "--output", str(out)])
+        assert result.exit_code == 0
+        content = out.read_text()
+        assert "10.0.0.0/24" in content
+        assert "NYC" in content
 
 
 class TestConfigError:

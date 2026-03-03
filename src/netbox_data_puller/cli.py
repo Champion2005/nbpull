@@ -1139,7 +1139,7 @@ def _rfc1918_mapping_status(prefix: Prefix) -> str:
     - ``unmapped``  — has **neither** site nor tenant
     - ``ambiguous`` — has one but not the other
     """
-    has_site = prefix.site is not None
+    has_site = prefix.resolved_site is not None
     has_tenant = prefix.tenant is not None
     if has_site and has_tenant:
         return "mapped"
@@ -1238,12 +1238,13 @@ def _prefix_to_location_row(prefix: Any, sites: dict[int, Site]) -> dict[str, An
 
     ``sites`` is a mapping of site_id → Site fetched from dcim/sites/,
     used to populate region and facility which are not available on the
-    NestedRef returned with each prefix.
+    resolved_site NestedRef returned with each prefix.
     """
-    site_obj = sites.get(prefix.site.id) if prefix.site else None
+    site_ref = prefix.resolved_site
+    site_obj = sites.get(site_ref.id) if site_ref else None
     return {
         "prefix": prefix.prefix,
-        "site": prefix.site.display if prefix.site else "",
+        "site": site_ref.display if site_ref else "",
         "region": (site_obj.region.display if site_obj and site_obj.region else ""),
         "facility": site_obj.facility if site_obj else "",
         "tenant": prefix.tenant.display if prefix.tenant else "",
@@ -1305,8 +1306,8 @@ def location_report(
 
     records = [Prefix.model_validate(r) for r in raw]
 
-    # Only mapped prefixes (site assigned) — unmapped excluded per PRD
-    records = [r for r in records if r.site is not None]
+    # Only mapped prefixes (resolved_site assigned) — unmapped excluded per PRD
+    records = [r for r in records if r.resolved_site is not None]
 
     if exclude_role:
         exclude_lower = exclude_role.lower()
@@ -1317,7 +1318,7 @@ def location_report(
         ]
 
     # Enrich with full site details (region, facility)
-    unique_site_ids = list({r.site.id for r in records if r.site})
+    unique_site_ids = list({r.resolved_site.id for r in records if r.resolved_site})
     with Progress(
         SpinnerColumn("dots"),
         TextColumn("[bold cyan]{task.description}"),
