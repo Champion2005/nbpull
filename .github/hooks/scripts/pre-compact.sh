@@ -5,7 +5,18 @@
 #
 # Input: JSON with trigger, timestamp, sessionId, cwd
 
-set -euo pipefail
+set -uo pipefail
+
+_ERR_LOG="${TMPDIR:-/tmp}/copilot-pre-compact-errors.log"
+handle_error() {
+  local code=$1 line=$2
+  printf '[%s] ERROR | hook=pre-compact.sh | exit=%d | line=%d\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$code" "$line" \
+    >> "$_ERR_LOG" 2>/dev/null || true
+  echo '{"continue": true}'
+  exit 0
+}
+trap 'handle_error $? $LINENO' ERR
 
 INPUT=$(cat)
 TIMESTAMP=$(echo "$INPUT" | jq -r '.timestamp')
@@ -15,6 +26,7 @@ TRIGGER=$(echo "$INPUT" | jq -r '.trigger')
 
 LOG_FILE="${CWD}/.github/hooks/logs/session.log"
 mkdir -p "$(dirname "$LOG_FILE")"
+_ERR_LOG="$LOG_FILE"  # redirect errors to real log
 BRANCH=$(git -C "$CWD" branch --show-current 2>/dev/null || echo "unknown")
 DIRTY=$(git -C "$CWD" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
 LAST_COMMIT=$(git -C "$CWD" log --oneline -1 2>/dev/null | tr -d "\"'" || echo "none")

@@ -5,7 +5,18 @@
 # Input (stdin): JSON with fields: timestamp, cwd, sessionId, hookEventName, agent_id, agent_type
 # Output (stdout): JSON — additionalContext injected into the subagent's context window
 
-set -euo pipefail
+set -uo pipefail
+
+_ERR_LOG="${TMPDIR:-/tmp}/copilot-subagent-start-errors.log"
+handle_error() {
+  local code=$1 line=$2
+  printf '[%s] ERROR | hook=subagent-start.sh | exit=%d | line=%d\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$code" "$line" \
+    >> "$_ERR_LOG" 2>/dev/null || true
+  echo '{"continue": true}'
+  exit 0
+}
+trap 'handle_error $? $LINENO' ERR
 
 INPUT=$(cat)
 
@@ -17,6 +28,7 @@ CWD=$(echo "$INPUT" | jq -r '.cwd')
 
 LOG_FILE="${CWD}/.github/hooks/logs/subagent.log"
 mkdir -p "$(dirname "$LOG_FILE")"
+_ERR_LOG="$LOG_FILE"  # redirect errors to real log
 
 # Append spawn entry to session log
 echo "[${TIMESTAMP}] SubagentStart | session=${SESSION_ID} | agent_type='${AGENT_TYPE}' agent_id='${AGENT_ID}'" >> "$LOG_FILE"

@@ -5,12 +5,24 @@
 #
 # Input: JSON with tool_name, tool_input, tool_response, timestamp, sessionId, cwd
 
-set -euo pipefail
+set -uo pipefail
+
+_ERR_LOG="${TMPDIR:-/tmp}/copilot-tool-logger-errors.log"
+handle_error() {
+  local code=$1 line=$2
+  printf '[%s] ERROR | hook=tool-logger.sh | exit=%d | line=%d\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$code" "$line" \
+    >> "$_ERR_LOG" 2>/dev/null || true
+  echo '{"continue": true}'
+  exit 0
+}
+trap 'handle_error $? $LINENO' ERR
 
 INPUT=$(cat)
 CWD=$(echo "$INPUT" | jq -r '.cwd')
 LOG_FILE="${CWD}/.github/hooks/logs/tool-audit.log"
 mkdir -p "$(dirname "$LOG_FILE")"
+_ERR_LOG="$LOG_FILE"  # redirect errors to real log
 
 TIMESTAMP=$(echo "$INPUT" | jq -r '.timestamp')
 SESSION_ID=$(echo "$INPUT" | jq -r '.sessionId')

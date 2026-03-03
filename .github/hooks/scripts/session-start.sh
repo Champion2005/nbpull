@@ -5,7 +5,18 @@
 #
 # Output: additionalContext injected into the agent's conversation window.
 
-set -euo pipefail
+set -uo pipefail
+
+_ERR_LOG="${TMPDIR:-/tmp}/copilot-session-start-errors.log"
+handle_error() {
+  local code=$1 line=$2
+  printf '[%s] ERROR | hook=session-start.sh | exit=%d | line=%d\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$code" "$line" \
+    >> "$_ERR_LOG" 2>/dev/null || true
+  echo '{"continue": true}'
+  exit 0
+}
+trap 'handle_error $? $LINENO' ERR
 
 INPUT=$(cat)
 CWD=$(echo "$INPUT" | jq -r '.cwd')
@@ -14,6 +25,7 @@ TIMESTAMP=$(echo "$INPUT" | jq -r '.timestamp')
 
 LOG_FILE="${CWD}/.github/hooks/logs/session.log"
 mkdir -p "$(dirname "$LOG_FILE")"
+_ERR_LOG="$LOG_FILE"  # redirect errors to real log
 echo "[${TIMESTAMP}] SessionStart | session=${SESSION_ID}" >> "$LOG_FILE"
 
 LINES=()

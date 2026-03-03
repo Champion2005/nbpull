@@ -12,7 +12,18 @@
 #
 # Input: JSON with tool_name, tool_input, timestamp, sessionId, cwd
 
-set -euo pipefail
+set -uo pipefail
+
+_ERR_LOG="${TMPDIR:-/tmp}/copilot-post-tool-lint-errors.log"
+handle_error() {
+  local code=$1 line=$2
+  printf '[%s] ERROR | hook=post-tool-lint.sh | exit=%d | line=%d\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$code" "$line" \
+    >> "$_ERR_LOG" 2>/dev/null || true
+  echo '{"continue": true}'
+  exit 0
+}
+trap 'handle_error $? $LINENO' ERR
 
 INPUT=$(cat)
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name')
@@ -24,6 +35,12 @@ if [ "$TOOL_NAME" != "editFiles" ] && [ "$TOOL_NAME" != "createFile" ]; then
 fi
 
 CWD=$(echo "$INPUT" | jq -r '.cwd')
+SESSION_ID=$(echo "$INPUT" | jq -r '.sessionId')
+TIMESTAMP=$(echo "$INPUT" | jq -r '.timestamp')
+
+SESSION_LOG="${CWD}/.github/hooks/logs/session.log"
+mkdir -p "$(dirname "$SESSION_LOG")"
+_ERR_LOG="$SESSION_LOG"  # redirect errors to real log
 
 # Collect affected file paths — handles both editFiles (array) and createFile (single path)
 FILES=$(echo "$INPUT" | jq -r '
@@ -98,6 +115,10 @@ done <<< "$FILES"
 
 if [ ${#RESULTS[@]} -gt 0 ]; then
   CONTEXT=$(printf '%b\n\n' "${RESULTS[@]}")
+  # Log lint findings to session log for observability
+  printf '[%s] LintWarning | session=%s | findings=%d | files=%s\n' \
+    "$TIMESTAMP" "$SESSION_ID" "${#RESULTS[@]}" \
+    "$(echo "$FILES" | tr '\n' ',' | head -c 200)" >> "$SESSION_LOG" 2>/dev/null || true
   jq -n --arg ctx "Lint results after edit:\n\n${CONTEXT}" \
     '{hookSpecificOutput:{hookEventName:"PostToolUse",additionalContext:$ctx}}'
   exit 0
