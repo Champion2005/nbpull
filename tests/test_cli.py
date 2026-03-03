@@ -1089,7 +1089,16 @@ class TestLocationReport:
         assert result.exit_code == 0
         assert out.exists()
         content = out.read_text()
-        assert "prefix" in content  # header
+        # PRD columns present in header
+        assert "ip_range" in content
+        assert "building" in content
+        assert "province_state" in content
+        assert "city" in content
+        # General columns present in header
+        assert "prefix" in content
+        assert "site" in content
+        assert "region" in content
+        assert "status" in content
         assert "10.0.0.0/24" in content  # mapped prefix present
         assert "192.168.0.0/24" not in content  # unmapped excluded
 
@@ -1130,6 +1139,11 @@ class TestLocationReport:
         content = out.read_text()
         assert "Ontario" in content
         assert "111 Main St" in content
+        # PRD alias columns populated
+        assert "province_state" in content  # header
+        # Ontario should appear in both region and province_state columns
+        lines = content.strip().split("\n")
+        assert len(lines) >= 2  # header + at least one data row
 
     @patch("netbox_data_puller.cli._fetch_sites_by_ids", new_callable=AsyncMock)
     @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
@@ -1215,6 +1229,63 @@ class TestLocationReport:
         content = out.read_text()
         assert "10.0.0.0/24" in content
         assert "NYC" in content
+
+    @patch("netbox_data_puller.cli._fetch_sites_by_ids", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_location_report_csv_has_prd_columns(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+        mock_sites: AsyncMock,
+        tmp_path: Path,
+    ) -> None:
+        """CSV includes both PRD and general columns with correct values."""
+        from netbox_data_puller.models.site import Site
+
+        mock_fetch.return_value = MOCK_RFC1918_MAPPED
+        mock_sites.return_value = {
+            1: Site.model_validate(
+                {
+                    "id": 1,
+                    "display": "NYC",
+                    "name": "NYC",
+                    "slug": "nyc",
+                    "region": {"id": 10, "display": "Ontario"},
+                    "tenant": None,
+                    "status": None,
+                    "facility": "111 Main St",
+                    "time_zone": None,
+                    "description": "",
+                    "tags": [],
+                }
+            )
+        }
+        out = tmp_path / "prd.csv"
+        result = runner.invoke(app, ["location-report", "--output", str(out)])
+        assert result.exit_code == 0
+        content = out.read_text()
+        lines = content.strip().split("\n")
+        header = lines[0]
+        data = lines[1]
+        # PRD columns in header
+        assert "ip_range" in header
+        assert "building" in header
+        assert "province_state" in header
+        assert "city" in header
+        # General columns in header
+        assert "prefix" in header
+        assert "site" in header
+        assert "region" in header
+        assert "facility" in header
+        assert "tenant" in header
+        assert "description" in header
+        assert "status" in header
+        # PRD values match general values
+        assert "10.0.0.0/24" in data  # ip_range and prefix
+        assert "NYC" in data  # building and site
+        assert "Ontario" in data  # province_state and region
+        assert "active" in data  # status
 
 
 class TestConfigError:

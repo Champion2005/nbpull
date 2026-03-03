@@ -1234,7 +1234,12 @@ def rfc1918(
 
 
 def _prefix_to_location_row(prefix: Any, sites: dict[int, Site]) -> dict[str, Any]:
-    """Flatten a mapped Prefix to the SMO location-report CSV row shape.
+    """Flatten a mapped Prefix to the location-report CSV row shape.
+
+    Includes both **PRD columns** (ip_range, building, province_state, city)
+    and **general columns** (prefix, site, region, facility, tenant,
+    description, status) so the output serves both the CMDB/SMO use-case
+    and general-purpose consumers.
 
     ``sites`` is a mapping of site_id → Site fetched from dcim/sites/,
     used to populate region and facility which are not available on the
@@ -1242,13 +1247,23 @@ def _prefix_to_location_row(prefix: Any, sites: dict[int, Site]) -> dict[str, An
     """
     site_ref = prefix.resolved_site
     site_obj = sites.get(site_ref.id) if site_ref else None
+    site_name = site_ref.display if site_ref else ""
+    region_name = site_obj.region.display if site_obj and site_obj.region else ""
+    status_val = prefix.status.value if prefix.status else ""
     return {
+        # PRD columns (Province/State, City, Building, IP Range)
+        "ip_range": prefix.prefix,
+        "building": site_name,
+        "province_state": region_name,
+        "city": "",
+        # General columns
         "prefix": prefix.prefix,
-        "site": site_ref.display if site_ref else "",
-        "region": (site_obj.region.display if site_obj and site_obj.region else ""),
+        "site": site_name,
+        "region": region_name,
         "facility": site_obj.facility if site_obj else "",
         "tenant": prefix.tenant.display if prefix.tenant else "",
         "description": prefix.description or "",
+        "status": status_val,
     }
 
 
@@ -1270,17 +1285,23 @@ def location_report(
     output: OutputOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
-    """📋 Location-to-IP report for SMO/CMDB (Phase 2 scaffold).
+    """📋 Location-to-IP report for CMDB discovery scanning.
 
     Extracts all **mapped** RFC 1918 Global VRF prefixes (those with a
-    site assignment) and outputs them in a flat format suitable for
-    ServiceNow CMDB discovery scanning.
+    site assignment) and outputs them in a flat CSV suitable for
+    ServiceNow CMDB discovery or general network documentation.
 
-    Columns: prefix, site, region, facility, tenant, description
+    \b
+    PRD columns (for CMDB/SMO):
+      ip_range        — CIDR notation (same as prefix)
+      building        — site name (same as site)
+      province_state  — region name (best available — depends on NetBox
+                        region hierarchy configuration)
+      city            — empty (reserved for future region hierarchy support)
 
-    Region and facility are enriched from the full Site record — not just
-    the NestedRef on the prefix — so these columns are always populated
-    when the site has that data in NetBox.
+    \b
+    General columns:
+      prefix, site, region, facility, tenant, description, status
 
     Default output format is CSV (--format csv).  Use --format json for
     machine-readable JSON.  Use --output / -o to specify the output file
