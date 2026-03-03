@@ -1,6 +1,6 @@
 ---
 description: "Session-end safety check. Verifies changes are committed, issues are captured, docs are current, and logs the session."
-tools: [execute, agent, memory, todo, vscode/askQuestions]
+tools: [agent, memory, todo, vscode/askQuestions]
 model: Claude Opus 4.6 (copilot)
 ---
 

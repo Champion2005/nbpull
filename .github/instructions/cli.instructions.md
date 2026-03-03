@@ -1,3 +1,7 @@
+---
+applyTo: "src/netbox_data_puller/cli.py, src/netbox_data_puller/formatters.py"
+---
+
 # CLI Instructions
 
 Apply to: `src/netbox_data_puller/cli.py`

@@ -11,11 +11,12 @@ INPUT=$(cat)
 
 TIMESTAMP=$(echo "$INPUT" | jq -r '.timestamp')
 SESSION_ID=$(echo "$INPUT" | jq -r '.sessionId')
-AGENT_ID=$(echo "$INPUT"  | jq -r '.agent_id')
-AGENT_TYPE=$(echo "$INPUT" | jq -r '.agent_type')
+AGENT_ID=$(echo "$INPUT"  | jq -r '.agent_id'  | tr -d "\"'")
+AGENT_TYPE=$(echo "$INPUT" | jq -r '.agent_type' | tr -d "\"'")
 CWD=$(echo "$INPUT" | jq -r '.cwd')
 
-LOG_FILE="${CWD}/.github/hooks/subagent.log"
+LOG_FILE="${CWD}/.github/hooks/logs/subagent.log"
+mkdir -p "$(dirname "$LOG_FILE")"
 
 # Append spawn entry to session log
 echo "[${TIMESTAMP}] SubagentStart | session=${SESSION_ID} | agent_type='${AGENT_TYPE}' agent_id='${AGENT_ID}'" >> "$LOG_FILE"

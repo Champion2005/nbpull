@@ -342,13 +342,28 @@ nbpull rfc1918 --mapping-status ambiguous --format json
 
 ## `nbpull location-report`
 
-**(Phase 2 scaffold — SMO/CMDB export)**
-
 Extracts all **mapped** RFC 1918 Global VRF prefixes (those with a site
 assignment) and writes a flat CSV suitable for ServiceNow CMDB discovery
-scanning. Unmapped prefixes are always excluded.
+scanning or general network documentation. Unmapped prefixes are always excluded.
 
-Columns: `prefix, site, region, facility, tenant, description`
+### CSV Columns
+
+The output includes both **PRD columns** (for CMDB/SMO consumption) and
+**general columns** (for broad utility):
+
+| Column | Group | Description |
+|--------|-------|-------------|
+| `ip_range` | PRD | CIDR notation (same value as `prefix`) |
+| `building` | PRD | Site name (same value as `site`) |
+| `province_state` | PRD | Region name — depends on NetBox region hierarchy config |
+| `city` | PRD | Reserved for future region hierarchy support (currently empty) |
+| `prefix` | General | CIDR notation |
+| `site` | General | Site name |
+| `region` | General | Region name |
+| `facility` | General | Facility / address from Site record |
+| `tenant` | General | Tenant name |
+| `description` | General | Prefix description |
+| `status` | General | Prefix status (active, reserved, deprecated, container) |
 
 Default output format is **CSV**.
 
@@ -376,8 +391,14 @@ nbpull location-report --format json --output smo_export.json
 | `--output` / `-o` | path | Output file path (prompts if omitted) |
 | `--verbose` / `-v` | flag | Debug logging |
 
-> **Note:** `region` and `facility` columns are populated from the Site record
-> linked to each prefix. If your NetBox Site objects do not have a region or
-> facility set, those cells will be empty. This reflects live NetBox data at
-> time of extraction (NFR-1).
+> **Note:** `region`, `facility`, and their PRD aliases (`province_state`,
+> `building`) are populated from the full Site record linked to each prefix.
+> If your NetBox Site objects do not have a region or facility set, those
+> cells will be empty. `city` is reserved for future support when NetBox
+> region hierarchy traversal is implemented. This reflects live NetBox data
+> at time of extraction (NFR-1).
+
+> **NetBox v4.2+ compatibility:** Prefixes use the generic `scope` relation
+> instead of the legacy `site` field. nbpull transparently handles both via
+> the `resolved_site` property on the Prefix model.
 

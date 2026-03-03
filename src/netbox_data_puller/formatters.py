@@ -90,7 +90,7 @@ def print_prefixes(records: list[Any]) -> None:
             _styled_status(r.status),
             _display_or_dash(r.vrf),
             _display_or_dash(r.tenant),
-            _display_or_dash(r.site),
+            _display_or_dash(r.resolved_site),
             _display_or_dash(r.vlan),
             _display_or_dash(r.role),
             "✅" if r.is_pool else "—",
@@ -154,7 +154,7 @@ def print_batch_summary(
                     cidr,
                     r.prefix,
                     _styled_status(r.status),
-                    _display_or_dash(r.site),
+                    _display_or_dash(r.resolved_site),
                     _display_or_dash(r.tenant),
                     r.description or "—",
                 )
@@ -165,7 +165,7 @@ def print_batch_summary(
                 cidr,
                 Text(f"≈ {closest.prefix}", style="yellow"),
                 _styled_status(closest.status),
-                _display_or_dash(closest.site),
+                _display_or_dash(closest.resolved_site),
                 _display_or_dash(closest.tenant),
                 closest.description or "—",
             )
@@ -493,7 +493,7 @@ def _mapping_status(r: Any) -> str:
     - ``unmapped``  — has **neither** site nor tenant
     - ``ambiguous`` — has one but not the other (partial documentation)
     """
-    has_site = r.site is not None
+    has_site = r.resolved_site is not None
     has_tenant = r.tenant is not None
     if has_site and has_tenant:
         return "mapped"
@@ -535,7 +535,7 @@ def print_rfc1918_inventory(records: list[Any]) -> None:
             _rfc1918_block(r.prefix),
             _styled_mapping(_mapping_status(r)),
             _styled_status(r.status),
-            _display_or_dash(r.site),
+            _display_or_dash(r.resolved_site),
             _display_or_dash(r.tenant),
             _display_or_dash(r.role),
             r.description or "—",

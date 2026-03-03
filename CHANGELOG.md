@@ -11,6 +11,15 @@ project adheres to
 
 ### Added
 
+- 🌐 **NetBox v4.4+ compatibility** — `Prefix` model now supports the
+  generic `scope` relation (`scope_type`, `scope_id`, `scope`) introduced
+  in NetBox v4.2. A `resolved_site` property transparently handles both
+  v4.2+ `scope` and legacy `site` fields. All CLI commands, formatters,
+  and tests updated.
+- 📋 **Expanded `location-report` CSV columns** — output now includes both
+  PRD columns (`ip_range`, `building`, `province_state`, `city`) for
+  CMDB/SMO consumption and general columns (`prefix`, `site`, `region`,
+  `facility`, `tenant`, `description`, `status`) for broad utility.
 - 📊 CSV output format (`--format csv`) on all data commands — writes a
   flat CSV file; nested NetBox objects (site, tenant, role, etc.) are
   reduced to their display string. Default output file is

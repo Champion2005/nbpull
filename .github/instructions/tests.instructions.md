@@ -1,3 +1,7 @@
+---
+applyTo: "tests/**"
+---
+
 # Test Instructions
 
 Apply to: `tests/**/*.py`

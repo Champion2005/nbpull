@@ -1139,7 +1139,7 @@ def _rfc1918_mapping_status(prefix: Prefix) -> str:
     - ``unmapped``  — has **neither** site nor tenant
     - ``ambiguous`` — has one but not the other
     """
-    has_site = prefix.site is not None
+    has_site = prefix.resolved_site is not None
     has_tenant = prefix.tenant is not None
     if has_site and has_tenant:
         return "mapped"
@@ -1234,20 +1234,36 @@ def rfc1918(
 
 
 def _prefix_to_location_row(prefix: Any, sites: dict[int, Site]) -> dict[str, Any]:
-    """Flatten a mapped Prefix to the SMO location-report CSV row shape.
+    """Flatten a mapped Prefix to the location-report CSV row shape.
+
+    Includes both **PRD columns** (ip_range, building, province_state, city)
+    and **general columns** (prefix, site, region, facility, tenant,
+    description, status) so the output serves both the CMDB/SMO use-case
+    and general-purpose consumers.
 
     ``sites`` is a mapping of site_id → Site fetched from dcim/sites/,
     used to populate region and facility which are not available on the
-    NestedRef returned with each prefix.
+    resolved_site NestedRef returned with each prefix.
     """
-    site_obj = sites.get(prefix.site.id) if prefix.site else None
+    site_ref = prefix.resolved_site
+    site_obj = sites.get(site_ref.id) if site_ref else None
+    site_name = site_ref.display if site_ref else ""
+    region_name = site_obj.region.display if site_obj and site_obj.region else ""
+    status_val = prefix.status.value if prefix.status else ""
     return {
+        # PRD columns (Province/State, City, Building, IP Range)
+        "ip_range": prefix.prefix,
+        "building": site_name,
+        "province_state": region_name,
+        "city": "",
+        # General columns
         "prefix": prefix.prefix,
-        "site": prefix.site.display if prefix.site else "",
-        "region": (site_obj.region.display if site_obj and site_obj.region else ""),
+        "site": site_name,
+        "region": region_name,
         "facility": site_obj.facility if site_obj else "",
         "tenant": prefix.tenant.display if prefix.tenant else "",
         "description": prefix.description or "",
+        "status": status_val,
     }
 
 
@@ -1269,17 +1285,23 @@ def location_report(
     output: OutputOpt = None,
     verbose: VerboseOpt = False,
 ) -> None:
-    """📋 Location-to-IP report for SMO/CMDB (Phase 2 scaffold).
+    """📋 Location-to-IP report for CMDB discovery scanning.
 
     Extracts all **mapped** RFC 1918 Global VRF prefixes (those with a
-    site assignment) and outputs them in a flat format suitable for
-    ServiceNow CMDB discovery scanning.
+    site assignment) and outputs them in a flat CSV suitable for
+    ServiceNow CMDB discovery or general network documentation.
 
-    Columns: prefix, site, region, facility, tenant, description
+    \b
+    PRD columns (for CMDB/SMO):
+      ip_range        — CIDR notation (same as prefix)
+      building        — site name (same as site)
+      province_state  — region name (best available — depends on NetBox
+                        region hierarchy configuration)
+      city            — empty (reserved for future region hierarchy support)
 
-    Region and facility are enriched from the full Site record — not just
-    the NestedRef on the prefix — so these columns are always populated
-    when the site has that data in NetBox.
+    \b
+    General columns:
+      prefix, site, region, facility, tenant, description, status
 
     Default output format is CSV (--format csv).  Use --format json for
     machine-readable JSON.  Use --output / -o to specify the output file
@@ -1305,8 +1327,8 @@ def location_report(
 
     records = [Prefix.model_validate(r) for r in raw]
 
-    # Only mapped prefixes (site assigned) — unmapped excluded per PRD
-    records = [r for r in records if r.site is not None]
+    # Only mapped prefixes (resolved_site assigned) — unmapped excluded per PRD
+    records = [r for r in records if r.resolved_site is not None]
 
     if exclude_role:
         exclude_lower = exclude_role.lower()
@@ -1317,7 +1339,7 @@ def location_report(
         ]
 
     # Enrich with full site details (region, facility)
-    unique_site_ids = list({r.site.id for r in records if r.site})
+    unique_site_ids = list({r.resolved_site.id for r in records if r.resolved_site})
     with Progress(
         SpinnerColumn("dots"),
         TextColumn("[bold cyan]{task.description}"),

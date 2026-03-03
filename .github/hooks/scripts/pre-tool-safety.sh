@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # PreToolUse hook — safety, auth, and environment validation before tool execution.
 # Fires before every tool call. Exits immediately for non-terminal tools.
+# Tailored for netbox_data_puller: Python + GitHub only (no Terraform, no Azure).
 #
-# Checks (all conditional on relevance):
+# Checks:
 #   - Dangerous command patterns: deny or require confirmation
 #   - GitHub CLI auth: warn if gh command and not logged in
-#   - Azure CLI auth: warn if az command and not logged in
 #   - Python venv: warn if python/pip command and venv not active
 #
 # Input: JSON with tool_name, tool_input, timestamp, sessionId, cwd
@@ -36,17 +36,6 @@ if echo "$COMMAND" | grep -qE 'rm\s+-rf\s+/[^/]|DROP\s+TABLE|DELETE\s+FROM\s+\S+
   jq -n '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:"Catastrophically destructive command blocked by safety policy. Confirm you intend this before proceeding."}}'
   exit 0
 fi
-# terraform destroy
-if echo "$COMMAND" | grep -qE 'terraform\s+destroy'; then
-  jq -n '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:"terraform destroy will permanently delete infrastructure. Confirm you intend this before proceeding."}}'
-  exit 0
-fi
-
-# az group delete / az resource delete
-if echo "$COMMAND" | grep -qE 'az\s+(group|resource)\s+delete'; then
-  jq -n '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:"Azure delete operation detected. This will permanently remove cloud resources. Confirm before proceeding."}}'
-  exit 0
-fi
 
 # git push --force / -f
 if echo "$COMMAND" | grep -qE 'git\s+push\s+.*(-f\b|--force)'; then
@@ -68,15 +57,6 @@ if echo "$COMMAND" | grep -qE '\bgh\b'; then
   if command -v gh >/dev/null 2>&1; then
     if ! gh auth status >/dev/null 2>&1; then
       WARNINGS+=("⚠️  GitHub CLI is not authenticated. Run 'gh auth login' or this command will fail.")
-    fi
-  fi
-fi
-
-# Azure auth
-if echo "$COMMAND" | grep -qE '\baz\b'; then
-  if command -v az >/dev/null 2>&1; then
-    if ! az account show >/dev/null 2>&1; then
-      WARNINGS+=("⚠️  Azure CLI is not authenticated. Run 'az login' or this command will fail.")
     fi
   fi
 fi

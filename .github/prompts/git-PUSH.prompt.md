@@ -1,7 +1,7 @@
 ---
 description: "Push the current branch to origin. Handles upstream setup, pre-push checks, and conflict detection."
 argument-hint: "Optional: target remote or branch override"
-tools: [execute, agent]
+tools: [agent]
 model: Claude Sonnet 4.6 (copilot)
 ---
 

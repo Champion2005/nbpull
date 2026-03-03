@@ -339,7 +339,10 @@ _SAMPLE_RFC1918_MAPPED = Prefix.model_validate(
         "display": "10.0.0.0/24",
         "prefix": "10.0.0.0/24",
         "status": {"value": "active", "label": "Active"},
-        "site": {"id": 1, "display": "NYC"},
+        "site": None,
+        "scope_type": "dcim.site",
+        "scope_id": 1,
+        "scope": {"id": 1, "display": "NYC"},
         "tenant": {"id": 1, "display": "Ops"},
     }
 )
@@ -350,6 +353,9 @@ _SAMPLE_RFC1918_UNMAPPED = Prefix.model_validate(
         "prefix": "192.168.0.0/24",
         "status": {"value": "reserved", "label": "Reserved"},
         "site": None,
+        "scope_type": None,
+        "scope_id": None,
+        "scope": None,
         "tenant": None,
     }
 )
@@ -359,7 +365,10 @@ _SAMPLE_RFC1918_AMBIGUOUS = Prefix.model_validate(
         "display": "172.16.0.0/24",
         "prefix": "172.16.0.0/24",
         "status": {"value": "active", "label": "Active"},
-        "site": {"id": 2, "display": "LAX"},
+        "site": None,
+        "scope_type": "dcim.site",
+        "scope_id": 2,
+        "scope": {"id": 2, "display": "LAX"},
         "tenant": None,
     }
 )
@@ -396,6 +405,8 @@ class TestMappingStatus:
                 "display": "10.1.0.0/24",
                 "prefix": "10.1.0.0/24",
                 "site": None,
+                "scope_type": None,
+                "scope": None,
                 "tenant": {"id": 5, "display": "Corp"},
             }
         )
@@ -417,3 +428,7 @@ class TestPrintRfc1918Inventory:
 
     def test_renders_single_prefix(self) -> None:
         print_rfc1918_inventory([_SAMPLE_RFC1918_MAPPED])
+
+    def test_renders_with_scope_data(self) -> None:
+        """v4.4 scope-based prefixes render correctly in the table."""
+        print_rfc1918_inventory([_SAMPLE_RFC1918_MAPPED, _SAMPLE_RFC1918_AMBIGUOUS])

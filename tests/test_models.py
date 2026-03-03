@@ -70,6 +70,91 @@ class TestPrefixModel:
         assert p.status.value == "container"
         assert p.status.display == "Container"
 
+    def test_prefix_with_scope_site(self) -> None:
+        """NetBox v4.4 returns scope instead of site for site-scoped prefixes."""
+        p = Prefix.model_validate(
+            {
+                "id": 10,
+                "display": "10.1.0.0/16",
+                "prefix": "10.1.0.0/16",
+                "site": None,
+                "scope_type": "dcim.site",
+                "scope_id": 5,
+                "scope": {"id": 5, "display": "NYC"},
+            }
+        )
+        assert p.scope_type == "dcim.site"
+        assert p.scope is not None
+        assert p.scope.display == "NYC"
+        assert p.site is None
+        resolved = p.resolved_site
+        assert resolved is not None
+        assert resolved.id == 5
+        assert resolved.display == "NYC"
+
+    def test_prefix_with_scope_non_site(self) -> None:
+        """scope_type other than dcim.site should not resolve as a site."""
+        p = Prefix.model_validate(
+            {
+                "id": 11,
+                "display": "10.2.0.0/16",
+                "prefix": "10.2.0.0/16",
+                "site": None,
+                "scope_type": "dcim.location",
+                "scope_id": 3,
+                "scope": {"id": 3, "display": "Floor 2"},
+            }
+        )
+        assert p.scope_type == "dcim.location"
+        assert p.resolved_site is None
+
+    def test_prefix_with_legacy_site(self) -> None:
+        """Pre-v4.2 response with site field only — resolved_site falls back."""
+        p = Prefix.model_validate(
+            {
+                "id": 12,
+                "display": "10.3.0.0/16",
+                "prefix": "10.3.0.0/16",
+                "site": {"id": 7, "display": "DC1"},
+            }
+        )
+        assert p.scope is None
+        assert p.scope_type is None
+        resolved = p.resolved_site
+        assert resolved is not None
+        assert resolved.id == 7
+        assert resolved.display == "DC1"
+
+    def test_prefix_with_both_scope_and_site(self) -> None:
+        """When both scope and site are present, scope wins."""
+        p = Prefix.model_validate(
+            {
+                "id": 13,
+                "display": "10.4.0.0/16",
+                "prefix": "10.4.0.0/16",
+                "site": {"id": 7, "display": "DC1"},
+                "scope_type": "dcim.site",
+                "scope_id": 5,
+                "scope": {"id": 5, "display": "NYC"},
+            }
+        )
+        resolved = p.resolved_site
+        assert resolved is not None
+        assert resolved.id == 5
+        assert resolved.display == "NYC"
+
+    def test_prefix_with_neither_scope_nor_site(self) -> None:
+        """No scope, no site — resolved_site is None."""
+        p = Prefix.model_validate(
+            {
+                "id": 14,
+                "display": "10.5.0.0/16",
+                "prefix": "10.5.0.0/16",
+                "site": None,
+            }
+        )
+        assert p.resolved_site is None
+
 
 class TestIPAddressModel:
     def test_minimal_ip(self) -> None:

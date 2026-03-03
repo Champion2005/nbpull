@@ -44,3 +44,14 @@ batch_prefixes.toml
 NetBox Location-IP Extract Report PRD.md
 # 🔒 uv lock (included for reproducibility — uncomment to ignore)
 # uv.lock
+
+# 🪝 Hook runtime logs (generated per session, not committed)
+.github/hooks/logs/session.log
+.github/hooks/logs/tool-audit.log
+.github/hooks/logs/subagent.log
+.github/hooks/logs/archive/*
+!.github/hooks/logs/archive/.gitkeep
+# Legacy log location (old path — safe to ignore if left over)
+.github/hooks/session.log
+.github/hooks/tool-audit.log
+.github/hooks/subagent.log

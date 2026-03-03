@@ -1,7 +1,7 @@
 ---
 description: "Execute an approved implementation plan phase by phase with review gates."
 argument-hint: "Path to the approved plan (plans/<feature>-plan.md) or feature name"
-tools: [execute, agent, memory, todo]
+tools: [agent, memory, todo]
 model: Claude Opus 4.6 (copilot)
 ---
 
@@ -28,13 +28,16 @@ Keep these on hand throughout all phases.
 
 For each phase in `plans/<feature>-plan.md`:
 
-### Step 1 — Write
+### Step 1 — Write & Verify
 
 Spawn **`writer` subagent** with a minimal briefing:
 - Phase number, goal (one sentence), and PRD requirement IDs being satisfied
 - File paths to read/edit (from the plan)
 - Relevant ADR constraints for this phase
 - Reference to the plan: `plans/<feature>-plan.md` — Writer reads phase details directly
+- Any build, test, or lint commands to run after writing (e.g. `pytest tests/`, `ruff check src/`, `uv run mypy`)
+
+Writer runs the requested commands after making changes and reports pass/fail. Do not spawn a separate terminal step — writer handles both implementation and verification.
 
 ### Step 2 — Review
 
