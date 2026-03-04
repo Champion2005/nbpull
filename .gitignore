@@ -41,16 +41,20 @@ audit_report.md
 rfc1918_inventory_report.md
 rfc1918_crossref_report.md
 batch_prefixes.toml
-NetBox Location-IP Extract Report PRD.md
+NetBox Location-IP Extract Report-PRD.md
+rfc1918_*.csv
+
+# 📋 Internal planning & session artifacts
+plans/*-context.md
+plans/*-plan.md
+plans/*-proposal.md
+plans/session-log.md
 # 🔒 uv lock (included for reproducibility — uncomment to ignore)
 # uv.lock
 
 # 🪝 Hook runtime logs (generated per session, not committed)
-.github/hooks/logs/session.log
-.github/hooks/logs/tool-audit.log
-.github/hooks/logs/subagent.log
-.github/hooks/logs/security.log
-.github/hooks/logs/archive/*
+.github/hooks/logs/**
+!.github/hooks/logs/.gitkeep
 !.github/hooks/logs/archive/.gitkeep
 # Legacy log location (old path — safe to ignore if left over)
 .github/hooks/session.log

@@ -28,7 +28,7 @@ PyPI: `nbpull` | Module: `netbox_data_puller` | Stack: Typer, httpx, Pydantic v2
 - **Explicit over assumed** — ask one focused question when intent is unclear
 - **Parallelize when possible** — spawn parallel subagents for independent tasks
 - **Delegate via subagents** — main agent orchestrates only; never runs terminal commands directly. Route by task:
-  - **`writer`** — create/edit files AND run build, test, install, lint commands (`pytest`, `ruff`, `uv`, etc.)
+  - **`writer`** — create/edit files AND run build, test, install, lint commands (`pytest`, `ruff`, `uv`, etc. NOT GH operations, leave that to the github subagent)
   - **`reader`** — read files, search code, discover patterns (read-only, no commands)
   - **`github`** — all git and `gh` CLI operations
   - **`fetcher`** — external HTTP/URL fetching

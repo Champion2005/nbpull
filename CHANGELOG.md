@@ -17,6 +17,19 @@ project adheres to
 
 ### Removed
 
+## [0.3.1] — 2026-03-04
+
+### Fixed
+
+- `rfc1918`: Coverage percentage and prefix counts now always reflect the **full
+  unfiltered dataset** regardless of active filters (`--mapping-status`,
+  `--status`, `--exclude-role`). Previously, filtering before passing records to
+  the formatter caused coverage to be computed from the filtered subset, producing
+  misleading results (e.g. `--mapping-status mapped` always showed 100%).
+- `rfc1918`: Summary line now shows `"Global Coverage: X%"` and
+  `"showing N of M prefixes"` when any filter is active, making it clear the
+  table is a subset while coverage reflects the full inventory.
+
 ## [0.3.0] — 2026-03-03
 
 ### Added
@@ -175,7 +188,8 @@ project adheres to
 - 🔒 Read-only safety guarantee — only GET requests, ever
 - ⚙️ Configuration via `.env` / environment variables (pydantic-settings)
 
-[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/Champion2005/nbpull/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Champion2005/nbpull/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Champion2005/nbpull/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Champion2005/nbpull/compare/v0.1.3...v0.2.0
