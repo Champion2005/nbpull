@@ -1,5 +1,10 @@
 """🧪 Tests for Rich table and JSON formatters."""
 
+import io
+import unittest.mock
+
+from rich.console import Console
+
 from netbox_data_puller.formatters import (
     _display_or_dash,
     _mapping_status,
@@ -432,3 +437,56 @@ class TestPrintRfc1918Inventory:
     def test_renders_with_scope_data(self) -> None:
         """v4.4 scope-based prefixes render correctly in the table."""
         print_rfc1918_inventory([_SAMPLE_RFC1918_MAPPED, _SAMPLE_RFC1918_AMBIGUOUS])
+
+    def test_stats_from_all_records(self) -> None:
+        """Stats are derived from all_records, not display records."""
+        buf = io.StringIO()
+        test_console = Console(file=buf, width=200)
+        with unittest.mock.patch(
+            "netbox_data_puller.formatters.console", test_console
+        ):
+            print_rfc1918_inventory(
+                [_SAMPLE_RFC1918_MAPPED],
+                all_records=[
+                    _SAMPLE_RFC1918_MAPPED,
+                    _SAMPLE_RFC1918_UNMAPPED,
+                    _SAMPLE_RFC1918_AMBIGUOUS,
+                ],
+            )
+        output = buf.getvalue()
+        assert "showing 1 of 3 prefixes" in output
+        assert "1 mapped" in output
+        assert "1 unmapped" in output
+        assert "1 ambiguous" in output
+        assert "33.3%" in output
+        assert "Global Coverage" in output
+
+    def test_stats_without_all_records_fallback(self) -> None:
+        """Without all_records, stats come from records (backward compat)."""
+        buf = io.StringIO()
+        test_console = Console(file=buf, width=200)
+        with unittest.mock.patch(
+            "netbox_data_puller.formatters.console", test_console
+        ):
+            print_rfc1918_inventory(
+                [
+                    _SAMPLE_RFC1918_MAPPED,
+                    _SAMPLE_RFC1918_UNMAPPED,
+                    _SAMPLE_RFC1918_AMBIGUOUS,
+                ]
+            )
+        output = buf.getvalue()
+        assert "3 prefixes" in output
+        assert "showing" not in output
+        assert "Global Coverage" in output
+
+    def test_stats_empty_all_records(self) -> None:
+        """Empty all_records doesn't crash; shows 0.0% coverage."""
+        buf = io.StringIO()
+        test_console = Console(file=buf, width=200)
+        with unittest.mock.patch(
+            "netbox_data_puller.formatters.console", test_console
+        ):
+            print_rfc1918_inventory([], all_records=[])
+        output = buf.getvalue()
+        assert "0.0%" in output

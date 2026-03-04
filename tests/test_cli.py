@@ -1024,6 +1024,88 @@ class TestRfc1918Command:
         assert "10.0.0" in result.output  # active prefix visible
         assert "192.168" not in result.output  # reserved prefix filtered out
 
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_filter_mapped_shows_global_coverage(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        """--mapping-status mapped still shows global coverage from full dataset."""
+        mock_fetch.return_value = MOCK_RFC1918_RESPONSE
+        result = runner.invoke(app, ["rfc1918", "--mapping-status", "mapped"])
+        assert result.exit_code == 0
+        assert "showing 1 of 2 prefixes" in result.output
+        assert "Coverage:" in result.output
+        assert "50.0%" in result.output
+        assert "1 mapped" in result.output
+        assert "1 unmapped" in result.output
+
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_filter_unmapped_shows_global_coverage(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        """--mapping-status unmapped still shows global coverage from full dataset."""
+        mock_fetch.return_value = MOCK_RFC1918_RESPONSE
+        result = runner.invoke(app, ["rfc1918", "--mapping-status", "unmapped"])
+        assert result.exit_code == 0
+        assert "showing 1 of 2 prefixes" in result.output
+        assert "50.0%" in result.output
+
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_status_filter_shows_global_coverage(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        """--status active still shows global coverage from full dataset."""
+        mock_fetch.return_value = MOCK_RFC1918_RESPONSE
+        result = runner.invoke(app, ["rfc1918", "--status", "active"])
+        assert result.exit_code == 0
+        assert "showing 1 of 2 prefixes" in result.output
+        assert "Coverage:" in result.output
+        assert "50.0%" in result.output
+
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_exclude_role_shows_global_coverage(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        """--exclude-role still shows global coverage from full dataset."""
+        response_with_role = [
+            {
+                **MOCK_RFC1918_RESPONSE[0],
+                "role": {"id": 1, "display": "Kubernetes"},
+            },
+            MOCK_RFC1918_RESPONSE[1],
+        ]
+        mock_fetch.return_value = response_with_role
+        result = runner.invoke(app, ["rfc1918", "--exclude-role", "kubernetes"])
+        assert result.exit_code == 0
+        assert "showing 1 of 2 prefixes" in result.output
+        assert "Coverage:" in result.output
+
+    @patch("netbox_data_puller.cli._fetch_rfc1918_blocks", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_rfc1918_no_filter_shows_total(
+        self,
+        mock_settings: AsyncMock,
+        mock_fetch: AsyncMock,
+    ) -> None:
+        """No filters shows total count without 'showing X of Y' indicator."""
+        mock_fetch.return_value = MOCK_RFC1918_RESPONSE
+        result = runner.invoke(app, ["rfc1918"])
+        assert result.exit_code == 0
+        assert "2 prefixes" in result.output
+        assert "showing" not in result.output
+        assert "Coverage:" in result.output
+
 
 # ------------------------------------------------------------------
 # Location report
