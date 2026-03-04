@@ -442,9 +442,7 @@ class TestPrintRfc1918Inventory:
         """Stats are derived from all_records, not display records."""
         buf = io.StringIO()
         test_console = Console(file=buf, width=200)
-        with unittest.mock.patch(
-            "netbox_data_puller.formatters.console", test_console
-        ):
+        with unittest.mock.patch("netbox_data_puller.formatters.console", test_console):
             print_rfc1918_inventory(
                 [_SAMPLE_RFC1918_MAPPED],
                 all_records=[
@@ -465,9 +463,7 @@ class TestPrintRfc1918Inventory:
         """Without all_records, stats come from records (backward compat)."""
         buf = io.StringIO()
         test_console = Console(file=buf, width=200)
-        with unittest.mock.patch(
-            "netbox_data_puller.formatters.console", test_console
-        ):
+        with unittest.mock.patch("netbox_data_puller.formatters.console", test_console):
             print_rfc1918_inventory(
                 [
                     _SAMPLE_RFC1918_MAPPED,
@@ -484,9 +480,7 @@ class TestPrintRfc1918Inventory:
         """Empty all_records doesn't crash; shows 0.0% coverage."""
         buf = io.StringIO()
         test_console = Console(file=buf, width=200)
-        with unittest.mock.patch(
-            "netbox_data_puller.formatters.console", test_console
-        ):
+        with unittest.mock.patch("netbox_data_puller.formatters.console", test_console):
             print_rfc1918_inventory([], all_records=[])
         output = buf.getvalue()
         assert "0.0%" in output
