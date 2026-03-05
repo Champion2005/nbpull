@@ -2,7 +2,7 @@
 
 import textwrap
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
@@ -113,6 +113,57 @@ class TestNoArgsShowsHelp:
         result = runner.invoke(app, [])
         # Typer no_args_is_help returns exit code 0 or 2
         assert result.exit_code in (0, 2)
+        assert "prefixes" in result.output or "Usage" in result.output
+
+
+class TestVersionFlag:
+    @patch("netbox_data_puller.cli.maybe_warn_upgrade")
+    @patch(
+        "netbox_data_puller.cli.get_installed_version",
+        return_value="0.3.1",
+    )
+    def test_version_flag(
+        self, mock_ver: MagicMock, mock_warn: MagicMock
+    ) -> None:
+        result = runner.invoke(app, ["--version"])
+        assert result.exit_code == 0
+        assert "nbpull" in result.output
+        assert "0.3.1" in result.output
+
+    @patch("netbox_data_puller.cli.maybe_warn_upgrade")
+    @patch(
+        "netbox_data_puller.cli.get_installed_version",
+        return_value="0.3.1",
+    )
+    def test_version_flag_is_eager(
+        self, mock_ver: MagicMock, mock_warn: MagicMock
+    ) -> None:
+        """--version should work even when placed before a command name."""
+        result = runner.invoke(app, ["--version", "prefixes"])
+        assert result.exit_code == 0
+        assert "nbpull" in result.output
+        assert "0.3.1" in result.output
+
+    @patch("netbox_data_puller.cli.atexit")
+    @patch("netbox_data_puller.cli._fetch", new_callable=AsyncMock)
+    @patch("netbox_data_puller.cli._get_settings")
+    def test_upgrade_check_registered(
+        self,
+        mock_settings: MagicMock,
+        mock_fetch: MagicMock,
+        mock_atexit: MagicMock,
+    ) -> None:
+        mock_fetch.return_value = [MOCK_PREFIX_RESPONSE]
+        runner.invoke(app, ["prefixes"])
+        mock_atexit.register.assert_called()
+
+    @patch("netbox_data_puller.cli.maybe_warn_upgrade")
+    def test_no_args_shows_help(
+        self,
+        mock_warn: MagicMock,
+    ) -> None:
+        result = runner.invoke(app, [])
+        assert result.exit_code == 0
         assert "prefixes" in result.output or "Usage" in result.output
 
 

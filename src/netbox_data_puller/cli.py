@@ -3,6 +3,7 @@
 All commands are READ-ONLY — no data is ever written to NetBox.
 """
 
+import atexit
 import asyncio
 import csv
 import datetime
@@ -53,6 +54,7 @@ from netbox_data_puller.models.site import Site
 from netbox_data_puller.models.tenant import Tenant
 from netbox_data_puller.models.vlan import VLAN
 from netbox_data_puller.models.vrf import VRF
+from netbox_data_puller.version_check import get_installed_version, maybe_warn_upgrade
 
 logger = logging.getLogger(__name__)
 console = Console(stderr=True)
@@ -60,9 +62,30 @@ console = Console(stderr=True)
 app = typer.Typer(
     name="nbpull",
     help="🔍 Read-only CLI to pull IPAM data from NetBox.",
-    no_args_is_help=True,
     rich_markup_mode="rich",
 )
+
+
+@app.callback(invoke_without_command=True)
+def main(
+    ctx: typer.Context,
+    version: Annotated[
+        bool | None,
+        typer.Option(
+            "--version",
+            help="Show the installed nbpull version and exit.",
+            is_eager=True,
+        ),
+    ] = None,
+) -> None:
+    """🔍 Read-only CLI to pull IPAM data from NetBox."""
+    if version:
+        console.print(f"nbpull {get_installed_version()}")
+        raise typer.Exit()
+    if ctx.invoked_subcommand is None:
+        console.print(ctx.get_help())
+        raise typer.Exit()
+    atexit.register(maybe_warn_upgrade, console)
 
 
 # ------------------------------------------------------------------
