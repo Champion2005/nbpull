@@ -11,6 +11,11 @@ project adheres to
 
 ### Added
 
+- 🔖 `--version` flag — prints the installed nbpull version and exits.
+- ⬆️ Upgrade check — after every command, warns on stderr when a newer
+  version is available on PyPI (cached, 7-day TTL; disable with
+  `NBPULL_NO_UPDATE_CHECK=1`).
+
 ### Changed
 
 ### Fixed
