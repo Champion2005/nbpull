@@ -122,9 +122,7 @@ class TestVersionFlag:
         "netbox_data_puller.cli.get_installed_version",
         return_value="0.3.1",
     )
-    def test_version_flag(
-        self, mock_ver: MagicMock, mock_warn: MagicMock
-    ) -> None:
+    def test_version_flag(self, mock_ver: MagicMock, mock_warn: MagicMock) -> None:
         result = runner.invoke(app, ["--version"])
         assert result.exit_code == 0
         assert "nbpull" in result.output
