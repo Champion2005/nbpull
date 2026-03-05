@@ -72,7 +72,7 @@ class TestCheckForUpdate:
         mock_fetch: MagicMock,
         mock_ver: MagicMock,
     ) -> None:
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         mock_cache.return_value = {
             "last_check": now.isoformat(),
             "latest_version": "2.0.0",
@@ -95,7 +95,7 @@ class TestCheckForUpdate:
         mock_fetch: MagicMock,
         mock_ver: MagicMock,
     ) -> None:
-        old = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=8)
+        old = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=8)
         mock_cache.return_value = {
             "last_check": old.isoformat(),
             "latest_version": "1.5.0",

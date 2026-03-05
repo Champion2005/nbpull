@@ -3,8 +3,8 @@
 All commands are READ-ONLY — no data is ever written to NetBox.
 """
 
-import atexit
 import asyncio
+import atexit
 import csv
 import datetime
 import io

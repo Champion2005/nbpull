@@ -57,7 +57,7 @@ def _write_cache(latest_version: str) -> None:
     try:
         cache_path = _get_cache_path()
         cache_path.parent.mkdir(parents=True, exist_ok=True)
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         cache_path.write_text(
             json.dumps(
                 {
@@ -71,7 +71,12 @@ def _write_cache(latest_version: str) -> None:
 
 
 def _fetch_latest_version() -> str | None:
-    """Fetch the latest version string from PyPI. Returns None on any error."""
+    """Fetch the latest version string from PyPI. Returns None on any error.
+
+    Intentionally synchronous: this function is called from an atexit handler
+    registered by the CLI, where an active asyncio event loop may no longer be
+    running, making async I/O non-viable.
+    """
     try:
         resp = httpx.get(_PYPI_URL, timeout=_HTTP_TIMEOUT)
         resp.raise_for_status()
