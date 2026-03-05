@@ -11,16 +11,20 @@ project adheres to
 
 ### Added
 
-- 🔖 `--version` flag — prints the installed nbpull version and exits.
-- ⬆️ Upgrade check — after every command, warns on stderr when a newer
-  version is available on PyPI (cached, 7-day TTL; disable with
-  `NBPULL_NO_UPDATE_CHECK=1`).
-
 ### Changed
 
 ### Fixed
 
 ### Removed
+
+## [0.4.0] — 2026-03-05
+
+### Added
+
+- 🔖 `--version` flag — prints the installed nbpull version and exits.
+- ⬆️ Upgrade check — after every command, warns on stderr when a newer
+  version is available on PyPI (cached, 7-day TTL; disable with
+  `NBPULL_NO_UPDATE_CHECK=1`).
 
 ## [0.3.1] — 2026-03-04
 
@@ -193,7 +197,8 @@ project adheres to
 - 🔒 Read-only safety guarantee — only GET requests, ever
 - ⚙️ Configuration via `.env` / environment variables (pydantic-settings)
 
-[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/Champion2005/nbpull/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Champion2005/nbpull/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/Champion2005/nbpull/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Champion2005/nbpull/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Champion2005/nbpull/compare/v0.2.0...v0.2.1
