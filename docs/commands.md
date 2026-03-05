@@ -2,6 +2,23 @@
 
 All commands are **read-only** — nbpull never writes data to NetBox.
 
+## Global Options
+
+| Flag | Description |
+|---|---|
+| `--version` | Print the installed nbpull version and exit. |
+| `--verbose` / `-v` | Enable debug logging on stderr. |
+
+### Automatic Upgrade Check
+
+After every command, nbpull silently checks PyPI for a newer release and
+prints a warning to **stderr** if one is found. The result is cached for
+**7 days** so the check does not slow down repeated invocations.
+
+To disable: set `NBPULL_NO_UPDATE_CHECK=1` in your environment or `.env`.
+
+---
+
 ## Global Behavior
 
 - Output defaults to **Rich tables** on stdout
